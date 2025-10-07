@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'General Sans';
+  src: url('./assets/fonts/GeneralSans-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'General Sans';
+  src: url('./assets/fonts/GeneralSans-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'General Sans';
+  src: url('./assets/fonts/GeneralSans-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'General Sans';
+  src: url('./assets/fonts/GeneralSans-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lora';
+  src: url('./assets/fonts/Lora-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lora';
+  src: url('./assets/fonts/Lora-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  font-family: 'General Sans', sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  height: 100svh;
+  font-family: inherit;
+}
+#root {
+  height: 100%;
+}
+
+@layer base {
+  :root {
+    --background: #ffff;
+    --card: #ffffff;
+    --primary: #60983c;
+    --secondary: #ffc72f;
+    --secondary-alt: #fff2ca;
+    --muted: #f7f5f2;
+    --muted-alt: #808080;
+    --accent: #15f97c;
+    --accent-alt: #008e54;
+    --accent-2: #39aba3;
+    --destructive: #ff4c4c;
+    --radius: 8px;
+  }
+}
+::host {
+  --text-light-fg-ci: var(--card);
+}
+.sigCanvas {
+  margin-inline: auto;
+  margin-top: 1rem;
+  border-bottom: 2px solid #d3d3d3;
+  width: 70%;
+  height: 70%;
+}
+
+.signfont {
+  font-family: 'Great Vibes', cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+.bureau-logo.svelte-6dfbr5.svelte-6dfbr5 {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  justify-content: center !important;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.clash-font {
+  font-family: 'Clash', sans-serif;
+}
+.lora-font {
+  font-family: 'Lora', serif;
+}

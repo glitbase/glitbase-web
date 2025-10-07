@@ -1,0 +1,38 @@
+.custom-checkbox {
+    width: 20px;
+    height: 20px;
+    appearance: none;
+    background-color: #fff;
+    border: 2px solid #60983C;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-checkbox:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.custom-checkbox:checked {
+    background-color: #60983C;
+    border-color: #60983C;
+}
+
+.custom-checkbox:checked::after {
+    content: '✔';
+    color: #fff;
+    font-size: 14px;
+    left: 15%;
+    bottom: 15%;
+    display: block;
+}
+
+.custom-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.6; 
+}
