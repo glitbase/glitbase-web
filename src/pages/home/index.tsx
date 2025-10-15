@@ -1,348 +1,391 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAppSelector } from '@/hooks/redux-hooks';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import HomeLayout from '@/layout/home/HomeLayout';
-import { useGetProductsQuery, useGetServicesQuery } from '@/redux/entity';
-import ProductCard from '@/components/EntityCards/ProductCard';
+import {
+  useFetchMarketplaceQuery,
+  useFetchMarketplaceCategoriesQuery,
+} from '@/redux/app';
+import ServiceCard from '@/components/EntityCards/ServiceCard';
+import ProviderCard from '@/components/EntityCards/ProviderCard';
+import CategoryCard from '@/components/EntityCards/CategoryCard';
+import ServiceCardSkeleton from '@/components/EntityCards/ServiceCardSkeleton';
+import ProviderCardSkeleton from '@/components/EntityCards/ProviderCardSkeleton';
+import CategoryCardSkeleton from '@/components/EntityCards/CategoryCardSkeleton';
 import VendorHome from './VendorHome';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
+import spiral from '@/assets/images/spiral.svg';
+import { useModal } from '@/components/Modal/ModalProvider';
+import { ModalId } from '@/Layout';
 
 const Home = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
   const [isLoading] = useState<boolean>(false);
   const user = useAppSelector((state) => state.auth.user);
+  const { showModal } = useModal();
 
-  const [currentEntity, setCurrentEntity] = useState<string>('product');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
-
-  const isManualEntityChange = useRef(false);
-
-  const entities = [
-    {
-      label: 'Products',
-      value: 'product',
-    },
-    {
-      label: 'Services',
-      value: 'service',
-    },
-  ];
-
+  // Fetch marketplace data
   const {
-    data: products = [],
-    isLoading: pLoading,
-    refetch: refetchProducts,
-  } = useGetProductsQuery({
-    status: 'pending',
-  });
-  const { data: services = [], refetch: refetchServices } = useGetServicesQuery(
-    { status: 'pending' }
-  );
-
-  const items =
-    currentEntity === 'product' ? products?.products : services?.services;
-
-  const allItems = useMemo(() => {
-    return [...(products?.products || []), ...(services?.services || [])];
-  }, [products, services]);
-
-  const resultCounts = useMemo(() => {
-    if (!isSearchActive || searchResults.length === 0) {
-      return { product: 0, service: 0 };
-    }
-
-    return searchResults.reduce(
-      (counts, item) => {
-        const type = item.type || 'product';
-        counts[type] = (counts[type] || 0) + 1;
-        return counts;
-      },
-      { product: 0, service: 0 }
-    );
-  }, [isSearchActive, searchResults]);
-
-  const filteredItems = useMemo(() => {
-    if (!isSearchActive) return items;
-
-    // Filter search results by the current entity type
-    return searchResults.filter((item) => {
-      if (currentEntity === 'product') {
-        return item.type === 'product' || !item.type;
-      } else {
-        return item.type === 'service';
-      }
+    data: marketplaceData,
+    isLoading: isMarketplaceLoading,
+    refetch: refetchMarketplace,
+  } = useFetchMarketplaceQuery(10);
+  const { data: categoriesData, isLoading: isCategoriesLoading } =
+    useFetchMarketplaceCategoriesQuery({
+      limit: 20,
+      type: 'service',
     });
-  }, [isSearchActive, searchResults, currentEntity, items]);
 
-  const handleEntityChange = (entityValue: string) => {
-    setCurrentEntity(entityValue);
-    isManualEntityChange.current = true;
+  // Refs for horizontal scrolling
+  const servicesScrollRef = useRef<HTMLDivElement>(null);
+  const providersScrollRef = useRef<HTMLDivElement>(null);
+  const newProvidersScrollRef = useRef<HTMLDivElement>(null);
 
-    setTimeout(() => {
-      isManualEntityChange.current = false;
-    }, 100);
+  // Scroll states for each carousel
+  const [servicesScrollState, setServicesScrollState] = useState({
+    isAtStart: true,
+    isAtEnd: false,
+  });
+  const [providersScrollState, setProvidersScrollState] = useState({
+    isAtStart: true,
+    isAtEnd: false,
+  });
+  const [newProvidersScrollState, setNewProvidersScrollState] = useState({
+    isAtStart: true,
+    isAtEnd: false,
+  });
+
+  const checkScrollPosition = (
+    element: HTMLDivElement,
+    setState: React.Dispatch<
+      React.SetStateAction<{ isAtStart: boolean; isAtEnd: boolean }>
+    >
+  ) => {
+    const { scrollLeft, scrollWidth, clientWidth } = element;
+    const isAtStart = scrollLeft <= 0;
+    const isAtEnd = scrollLeft + clientWidth >= scrollWidth - 1; // -1 for rounding
+
+    setState({ isAtStart, isAtEnd });
   };
 
+  const scroll = (
+    ref: React.RefObject<HTMLDivElement>,
+    direction: string,
+    setState: React.Dispatch<
+      React.SetStateAction<{ isAtStart: boolean; isAtEnd: boolean }>
+    >
+  ) => {
+    if (ref.current) {
+      const scrollAmount = 320;
+      ref.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+
+      // Check position after scroll animation completes
+      setTimeout(() => {
+        if (ref.current) {
+          checkScrollPosition(ref.current, setState);
+        }
+      }, 300);
+    }
+  };
+
+  // Add scroll listeners
   useEffect(() => {
-    const handlePageReload = () => {
-      setSearchTerm('');
-      setSearchResults([]);
-      setIsSearchActive(false);
-      navigate(location.pathname, { replace: true, state: null });
+    const servicesEl = servicesScrollRef.current;
+    const providersEl = providersScrollRef.current;
+    const newProvidersEl = newProvidersScrollRef.current;
+
+    const handleServicesScroll = () => {
+      if (servicesEl) checkScrollPosition(servicesEl, setServicesScrollState);
+    };
+    const handleProvidersScroll = () => {
+      if (providersEl)
+        checkScrollPosition(providersEl, setProvidersScrollState);
+    };
+    const handleNewProvidersScroll = () => {
+      if (newProvidersEl)
+        checkScrollPosition(newProvidersEl, setNewProvidersScrollState);
     };
 
-    window.addEventListener('beforeunload', handlePageReload);
+    servicesEl?.addEventListener('scroll', handleServicesScroll);
+    providersEl?.addEventListener('scroll', handleProvidersScroll);
+    newProvidersEl?.addEventListener('scroll', handleNewProvidersScroll);
+
+    // Initial check
+    if (servicesEl) checkScrollPosition(servicesEl, setServicesScrollState);
+    if (providersEl) checkScrollPosition(providersEl, setProvidersScrollState);
+    if (newProvidersEl)
+      checkScrollPosition(newProvidersEl, setNewProvidersScrollState);
 
     return () => {
-      window.removeEventListener('beforeunload', handlePageReload);
+      servicesEl?.removeEventListener('scroll', handleServicesScroll);
+      providersEl?.removeEventListener('scroll', handleProvidersScroll);
+      newProvidersEl?.removeEventListener('scroll', handleNewProvidersScroll);
     };
-  }, [location.pathname, navigate]);
-
-  useEffect(() => {
-    if (
-      isSearchActive &&
-      filteredItems.length === 0 &&
-      !isManualEntityChange.current
-    ) {
-      if (currentEntity === 'product' && resultCounts.service > 0) {
-        setCurrentEntity('service');
-      } else if (currentEntity === 'service' && resultCounts.product > 0) {
-        setCurrentEntity('product');
-      }
-    }
-  }, [isSearchActive, filteredItems?.length, currentEntity, resultCounts]);
-
-  useEffect(() => {
-    const resetSearchState = () => {
-      setSearchTerm('');
-      setSearchResults([]);
-      setIsSearchActive(false);
-    };
-
-    resetSearchState();
-
-    window.addEventListener('beforeunload', resetSearchState);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('beforeunload', resetSearchState);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (location.state?.searchTerm) {
-      const term = location.state.searchTerm;
-
-      if (searchTerm !== term) {
-        setSearchTerm(term);
-      }
-
-      const results = allItems.filter(
-        (item: any) =>
-          item?.name?.toLowerCase().includes(term.toLowerCase()) ||
-          item?.description?.toLowerCase().includes(term.toLowerCase())
-      );
-
-      if (results.length > 0) {
-        const typedResults = results.map((item) => ({
-          ...item,
-          type: products?.products?.find(
-            (p: { id: string }) => p.id === item.id
-          )
-            ? 'product'
-            : 'service',
-        }));
-
-        setSearchResults(typedResults);
-
-        if (!isSearchActive) {
-          setIsSearchActive(true);
-        }
-
-        const productCount = typedResults.filter(
-          (item) => item.type === 'product'
-        ).length;
-        const serviceCount = typedResults.filter(
-          (item) => item.type === 'service'
-        ).length;
-
-        if (productCount === 0 && serviceCount > 0) {
-          setCurrentEntity('service');
-        } else if (serviceCount === 0 && productCount > 0) {
-          setCurrentEntity('product');
-        }
-      } else {
-        if (searchResults.length !== 0) {
-          setSearchResults([]);
-        }
-
-        if (isSearchActive) {
-          setIsSearchActive(false);
-        }
-      }
-    } else {
-      // Avoid redundant updates
-      if (searchTerm !== '') {
-        setSearchTerm('');
-      }
-
-      if (searchResults.length !== 0) {
-        setSearchResults([]);
-      }
-
-      if (isSearchActive) {
-        setIsSearchActive(false);
-      }
-    }
-  }, [
-    location.state?.searchTerm,
-    allItems,
-    products?.products,
-    searchResults,
-    isSearchActive,
-  ]);
+  }, [marketplaceData]);
 
   const handleSearch = (value: string) => {
-    if (!value.trim()) {
-      setSearchTerm('');
-      setIsSearchActive(false);
-      setSearchResults([]);
-      return;
-    }
-
-    setSearchTerm(value);
-
-    const results = allItems.filter(
-      (item: any) =>
-        item?.name?.toLowerCase().includes(value.toLowerCase()) ||
-        item?.description?.toLowerCase().includes(value.toLowerCase())
-    );
-
-    if (results.length > 0) {
-      const typedResults = results.map((item) => ({
-        ...item,
-        type: products?.products?.find((p: { id: string }) => p.id === item.id)
-          ? 'product'
-          : 'service',
-      }));
-
-      setSearchResults(typedResults);
-      setIsSearchActive(true);
-
-      const productCount = typedResults.filter(
-        (item) => item.type === 'product'
-      ).length;
-      const serviceCount = typedResults.filter(
-        (item) => item.type === 'service'
-      ).length;
-
-      if (productCount === 0 && serviceCount > 0) {
-        setCurrentEntity('service');
-      } else if (serviceCount === 0 && productCount > 0) {
-        setCurrentEntity('product');
-      }
-    } else {
-      setIsSearchActive(false);
-      setSearchResults([]);
-    }
+    // Handle search logic here
+    console.log('Search:', value);
   };
 
   const handleLocationChange = () => {
-    // Refetch products and services when location changes
-    refetchProducts();
-    refetchServices();
+    // Refetch marketplace data when location changes
+    refetchMarketplace();
   };
 
   return (
     <HomeLayout
       isLoading={isLoading}
       onSearch={handleSearch}
-      searchItems={allItems}
+      searchItems={[]}
       onLocationChange={handleLocationChange}
     >
       {user?.activeRole === 'vendor' ? (
         <VendorHome />
       ) : (
-        <div className="px-8 py-6">
+        <div className="px-12 py-6  min-h-screen">
           {/* Greeting Section */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-[32px] font-normal text-[#1D2739]">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-[40px] font-normal text-[#1D2739] font-[lora]">
               Hello, {user?.firstName || 'User'} 👋
             </h1>
-            <button className="flex items-center gap-2 px-4 py-2 border border-[#E4E7EC] rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="flex items-center gap-2 px-6 py-3  rounded-lg hover:bg-gray-50 transition-colors bg-[#FAFAFA]">
               <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M5 10H15M2.5 5H17.5M7.5 15H12.5"
-                  stroke="#1D2739"
-                  strokeWidth="1.67"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  d="M2 4.66675L4 4.66675"
+                  stroke="#3B3B3B"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M2 11.3333L6 11.3333"
+                  stroke="#3B3B3B"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M12 11.3333H14"
+                  stroke="#3B3B3B"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M10 4.66675L14 4.66675"
+                  stroke="#3B3B3B"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 4.66675C4 4.04549 4 3.73487 4.10149 3.48983C4.23682 3.16313 4.49639 2.90357 4.82309 2.76824C5.06812 2.66675 5.37875 2.66675 6 2.66675C6.62125 2.66675 6.93187 2.66675 7.17693 2.76824C7.5036 2.90357 7.7632 3.16313 7.89853 3.48983C8 3.73487 8 4.04549 8 4.66675C8 5.288 8 5.59863 7.89853 5.84366C7.7632 6.17036 7.5036 6.42993 7.17693 6.56525C6.93187 6.66675 6.62125 6.66675 6 6.66675C5.37875 6.66675 5.06812 6.66675 4.82309 6.56525C4.49639 6.42993 4.23682 6.17036 4.10149 5.84366C4 5.59863 4 5.288 4 4.66675Z"
+                  stroke="#3B3B3B"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M8 11.3333C8 10.712 8 10.4014 8.10147 10.1563C8.2368 9.82965 8.4964 9.57005 8.82307 9.43472C9.06813 9.33325 9.37873 9.33325 10 9.33325C10.6213 9.33325 10.9319 9.33325 11.1769 9.43472C11.5036 9.57005 11.7632 9.82965 11.8985 10.1563C12 10.4014 12 10.712 12 11.3333C12 11.9545 12 12.2651 11.8985 12.5102C11.7632 12.8369 11.5036 13.0965 11.1769 13.2318C10.9319 13.3333 10.6213 13.3333 10 13.3333C9.37873 13.3333 9.06813 13.3333 8.82307 13.2318C8.4964 13.0965 8.2368 12.8369 8.10147 12.5102C8 12.2651 8 11.9545 8 11.3333Z"
+                  stroke="#3B3B3B"
+                  stroke-width="1.5"
                 />
               </svg>
+
               <span className="text-[14px] font-medium text-[#1D2739]">
                 Filters
               </span>
             </button>
           </div>
 
-          {/* Search Results Header */}
-          {isSearchActive && (
-            <h3 className="font-[lora] text-semibold text-[#1D2739] text-[1.4rem] mb-4">
-              {filteredItems.length > 0
-                ? `Showing search results for "${searchTerm}" (${filteredItems.length})`
-                : `No results found for "${searchTerm}"`}
-            </h3>
-          )}
-          <div className="flex mt-4 rounded-lg border border-[#E4E7EC] w-fit overflow-hidden">
-            {entities?.map((entity) => (
-              <p
-                key={entity?.label}
-                onClick={() => handleEntityChange(entity?.value)}
-                className={`py-2 capitalize cursor-pointer px-5 text-[12px] font-semibold ${
-                  currentEntity === entity?.value
-                    ? 'bg-[#FFF] text-[#1671D9]'
-                    : 'bg-[#E4E7EC] text-[#98A2B3]'
-                }`}
-              >
-                {entity?.label}{' '}
-                {isSearchActive && `(${resultCounts[entity.value]})`}
-              </p>
-            ))}
-          </div>
-          {!isSearchActive && (
-            <h3 className="font-[Lora] font-semibold text-[#B73F79] text-[1.05rem] capitalize mt-6">
-              Trending {currentEntity}s
-            </h3>
-          )}
-          {pLoading ? (
-            <></>
-          ) : (
-            <>
-              {isSearchActive && filteredItems.length === 0 && (
-                <div className="flex justify-center items-center h-40 w-full">
-                  <p className="text-gray-500 font-medium text-center">
-                    No {currentEntity} results found for "{searchTerm}"
-                  </p>
-                </div>
-              )}
-              <div
-                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mt-4"
-                style={{ rowGap: '0px' }}
-              >
-                {filteredItems?.map((product: any) => (
-                  <ProductCard key={product?.id} item={product} />
-                ))}
+          {/* Banner Section */}
+          <div className="mb-12 relative overflow-hidden rounded-2xl bg-[#F2FFEC] p-8 h-[250px] flex items-center justify-between">
+            <div className="flex flex-col justify-between h-full">
+              <div className="upper mb-4">
+                {' '}
+                <h2 className="text-[24px] font-semibold text-[#0A0A0A] mb-3 max-w-[375px]">
+                  Your favorite pro not here yet?
+                </h2>
+                <p className="text-[18px] text-[#6C6C6C] mb-4 max-w-[375px]">
+                  Share their details with us and we'll invite them to join
+                </p>
               </div>
-            </>
-          )}
+
+              <button
+                onClick={() => showModal(ModalId.RECOMMEND_PRO_MODAL)}
+                className="bg-[#4C9A2A] text-white max-w-[225px] px-12 py-4 rounded-full font-semibold text-[14px] hover:bg-[#3d7b22] transition-colors"
+              >
+                Submit their info
+              </button>
+            </div>
+            <div className="absolute right-0 top-0 h-full">
+              <img
+                src={spiral}
+                alt="banner"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+
+          {/* Services you may love */}
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[24px] font-semibold text-[#1D2739]">
+                Services you may love
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() =>
+                    scroll(servicesScrollRef, 'left', setServicesScrollState)
+                  }
+                  disabled={servicesScrollState.isAtStart}
+                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <IoChevronBack size={20} className="text-[#1D2739]" />
+                </button>
+                <button
+                  onClick={() =>
+                    scroll(servicesScrollRef, 'right', setServicesScrollState)
+                  }
+                  disabled={servicesScrollState.isAtEnd}
+                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <IoChevronForward size={20} className="text-[#1D2739]" />
+                </button>
+              </div>
+            </div>
+            <div
+              ref={servicesScrollRef}
+              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+            >
+              {isMarketplaceLoading
+                ? Array.from({ length: 8 }).map((_, index) => (
+                    <ServiceCardSkeleton key={`service-skeleton-${index}`} />
+                  ))
+                : marketplaceData?.servicesYouMayLove?.data?.services?.map(
+                    (service: any) => (
+                      <ServiceCard key={service.id} item={service} />
+                    )
+                  )}
+            </div>
+          </div>
+
+          {/* Providers near you */}
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[24px] font-semibold text-[#1D2739]">
+                Providers near you
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() =>
+                    scroll(providersScrollRef, 'left', setProvidersScrollState)
+                  }
+                  disabled={providersScrollState.isAtStart}
+                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <IoChevronBack size={20} className="text-[#1D2739]" />
+                </button>
+                <button
+                  onClick={() =>
+                    scroll(providersScrollRef, 'right', setProvidersScrollState)
+                  }
+                  disabled={providersScrollState.isAtEnd}
+                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <IoChevronForward size={20} className="text-[#1D2739]" />
+                </button>
+              </div>
+            </div>
+            <div
+              ref={providersScrollRef}
+              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+            >
+              {isMarketplaceLoading
+                ? Array.from({ length: 8 }).map((_, index) => (
+                    <ProviderCardSkeleton key={`provider-skeleton-${index}`} />
+                  ))
+                : marketplaceData?.providersNearYou?.data?.stores?.map(
+                    (store: any) => <ProviderCard key={store.id} item={store} />
+                  )}
+            </div>
+          </div>
+
+          {/* Categories */}
+          <div className="mb-12">
+            <h2 className="text-[24px] font-semibold text-[#1D2739] mb-6">
+              Categories
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {isCategoriesLoading
+                ? Array.from({ length: 8 }).map((_, index) => (
+                    <CategoryCardSkeleton key={`category-skeleton-${index}`} />
+                  ))
+                : categoriesData?.categories
+                    ?.slice(0, 8)
+                    .map((category: any) => (
+                      <CategoryCard key={category.id} item={category} />
+                    ))}
+            </div>
+          </div>
+
+          {/* New to glitbase */}
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[24px] font-semibold text-[#1D2739]">
+                New to glitbase
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() =>
+                    scroll(
+                      newProvidersScrollRef,
+                      'left',
+                      setNewProvidersScrollState
+                    )
+                  }
+                  disabled={newProvidersScrollState.isAtStart}
+                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <IoChevronBack size={20} className="text-[#1D2739]" />
+                </button>
+                <button
+                  onClick={() =>
+                    scroll(
+                      newProvidersScrollRef,
+                      'right',
+                      setNewProvidersScrollState
+                    )
+                  }
+                  disabled={newProvidersScrollState.isAtEnd}
+                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <IoChevronForward size={20} className="text-[#1D2739]" />
+                </button>
+              </div>
+            </div>
+            <div
+              ref={newProvidersScrollRef}
+              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+            >
+              {isMarketplaceLoading
+                ? Array.from({ length: 8 }).map((_, index) => (
+                    <ProviderCardSkeleton
+                      key={`new-provider-skeleton-${index}`}
+                    />
+                  ))
+                : marketplaceData?.newToGlitbase?.data?.stores?.map(
+                    (store: any) => <ProviderCard key={store.id} item={store} />
+                  )}
+            </div>
+          </div>
         </div>
       )}
     </HomeLayout>

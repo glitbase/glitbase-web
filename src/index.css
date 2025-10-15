@@ -114,3 +114,54 @@ body {
 .lora-font {
   font-family: 'Lora', serif;
 }
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0%,
+    #e0e0e0 20%,
+    #f0f0f0 40%,
+    #f0f0f0 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Custom Toast Styles */
+.Toastify__toast {
+  font-family: 'General Sans', sans-serif !important;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.Toastify__toast-body {
+  padding: 0;
+  margin: 0;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.Toastify__close-button {
+  color: white;
+  opacity: 1;
+  align-self: center;
+}
+
+.Toastify__close-button:hover {
+  color: #d1d5db;
+}

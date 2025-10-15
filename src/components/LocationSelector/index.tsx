@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import { FaLocationDot } from 'react-icons/fa6';
-import { IoClose, IoChevronDown, IoLocate } from 'react-icons/io5';
+import { IoClose, IoChevronDown } from 'react-icons/io5';
 import { debounce } from 'lodash';
 import {
   useUpdateUserProfileMutation,
@@ -9,7 +9,6 @@ import {
 } from '@/redux/auth';
 import { useAppSelector } from '@/hooks/redux-hooks';
 import { Input } from '@/components/Inputs/TextInput';
-import { Button } from '@/components/Buttons';
 
 const googleCloudApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -23,7 +22,19 @@ interface PlaceResult {
 }
 
 interface LocationSelectorProps {
-  onLocationChange?: (locationData: any) => void;
+  onLocationChange?: (locationData: LocationData) => void;
+}
+
+interface LocationData {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipcode: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
@@ -37,6 +48,9 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [updateProfile] = useUpdateUserProfileMutation();
   const { refetch } = useUserProfileQuery(undefined, {});
+  const autocompleteService =
+    useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesService = useRef<google.maps.places.PlacesService | null>(null);
 
   useEffect(() => {
     loadRecentSearches();
@@ -48,6 +62,46 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
       setSelectedLocation(displayLocation);
     }
   }, [user]);
+
+  // Load Google Maps script
+  useEffect(() => {
+    const initializeServices = () => {
+      if (window.google?.maps?.places) {
+        autocompleteService.current =
+          new window.google.maps.places.AutocompleteService();
+        // Create a dummy div for PlacesService (it requires a map or div element)
+        const dummyDiv = document.createElement('div');
+        placesService.current = new window.google.maps.places.PlacesService(
+          dummyDiv
+        );
+      }
+    };
+
+    // Check if Google Maps is already loaded
+    if (window.google?.maps?.places) {
+      initializeServices();
+      return;
+    }
+
+    // Check if script is already being loaded
+    const existingScript = document.querySelector(
+      'script[src*="maps.googleapis.com"]'
+    );
+
+    if (existingScript) {
+      // Script already exists, wait for it to load
+      existingScript.addEventListener('load', initializeServices);
+      return;
+    }
+
+    // Load the script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleCloudApiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeServices;
+    document.head.appendChild(script);
+  }, []);
 
   const loadRecentSearches = async () => {
     try {
@@ -80,23 +134,55 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
       return;
     }
 
+    if (!autocompleteService.current) {
+      console.error('Autocomplete service not initialized');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Restrict search to Nigeria (NG) and United Kingdom (GB)
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}&components=country:ng|country:gb&key=${googleCloudApiKey}`
+      autocompleteService.current.getPlacePredictions(
+        {
+          input: query,
+          componentRestrictions: { country: ['ng', 'gb'] },
+        },
+        (
+          predictions: google.maps.places.AutocompletePrediction[] | null,
+          status: google.maps.places.PlacesServiceStatus
+        ) => {
+          setIsLoading(false);
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            predictions
+          ) {
+            const results: PlaceResult[] = predictions
+              .slice(0, 8)
+              .map((prediction) => ({
+                place_id: prediction.place_id,
+                description: prediction.description,
+                structured_formatting: {
+                  main_text: prediction.structured_formatting.main_text,
+                  secondary_text:
+                    prediction.structured_formatting.secondary_text,
+                },
+              }));
+            setSearchResults(results);
+          } else {
+            setSearchResults([]);
+          }
+        }
       );
-      const data = await response.json();
-      setSearchResults((data.predictions || []).slice(0, 8));
     } catch (error) {
       console.error('Error searching places:', error);
-    } finally {
       setIsLoading(false);
     }
   };
 
   const debouncedSearch = useCallback(
-    debounce((query: string) => searchPlaces(query), 500),
+    debounce((query: string) => {
+      searchPlaces(query);
+    }, 500),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -105,6 +191,13 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
     try {
       if (!navigator.geolocation) {
         alert('Geolocation is not supported by your browser');
+        setIsGettingLocation(false);
+        return;
+      }
+
+      if (!window.google) {
+        alert('Google Maps is still loading. Please try again.');
+        setIsGettingLocation(false);
         return;
       }
 
@@ -112,56 +205,63 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
         async (position) => {
           const { latitude, longitude } = position.coords;
 
-          // Reverse geocode to get readable address
-          const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${googleCloudApiKey}`
-          );
-          const data = await response.json();
+          // Use Google Maps Geocoder for reverse geocoding
+          const geocoder = new window.google.maps.Geocoder();
+          const latlng = { lat: latitude, lng: longitude };
 
-          if (data.results && data.results.length > 0) {
-            const result = data.results[0];
-            const formattedAddress = result.formatted_address;
+          geocoder.geocode(
+            { location: latlng },
+            (
+              results: google.maps.GeocoderResult[] | null,
+              status: google.maps.GeocoderStatus
+            ) => {
+              if (status === 'OK' && results && results.length > 0) {
+                const result = results[0];
+                const formattedAddress = result.formatted_address;
 
-            // Create a place result object
-            const currentLocationPlace: PlaceResult = {
-              place_id: `current_${Date.now()}`,
-              description: formattedAddress,
-              structured_formatting: {
-                main_text:
-                  result.address_components?.[0]?.long_name || formattedAddress,
-                secondary_text: formattedAddress
+                // Create a place result object
+                const currentLocationPlace: PlaceResult = {
+                  place_id: `current_${Date.now()}`,
+                  description: formattedAddress,
+                  structured_formatting: {
+                    main_text:
+                      result.address_components?.[0]?.long_name ||
+                      formattedAddress,
+                    secondary_text: formattedAddress
+                      .split(',')
+                      .slice(1)
+                      .join(',')
+                      .trim(),
+                  },
+                };
+
+                // Update location with coordinates
+                const addressParts = formattedAddress
                   .split(',')
-                  .slice(1)
-                  .join(',')
-                  .trim(),
-              },
-            };
+                  .map((part: string) => part.trim());
+                const fullLocation = `${addressParts[0]}, ${
+                  addressParts[1] || ''
+                }, ${addressParts[2] || ''}`
+                  .replace(/,\s*,/g, ',')
+                  .replace(/,\s*$/, '');
 
-            // Update location with coordinates
-            const addressParts = formattedAddress
-              .split(',')
-              .map((part) => part.trim());
-            const fullLocation = `${addressParts[0]}, ${
-              addressParts[1] || ''
-            }, ${addressParts[2] || ''}`
-              .replace(/,\s*,/g, ',')
-              .replace(/,\s*$/, '');
+                setSelectedLocation(fullLocation);
+                saveRecentSearch(currentLocationPlace);
+                setModalVisible(false);
+                setSearchText('');
+                setSearchResults([]);
 
-            setSelectedLocation(fullLocation);
-            saveRecentSearch(currentLocationPlace);
-            setModalVisible(false);
-            setSearchText('');
-            setSearchResults([]);
-
-            // Update user's preferred location in backend with coordinates
-            await updateUserLocation(currentLocationPlace, {
-              latitude,
-              longitude,
-            });
-          } else {
-            alert('Could not get current location address');
-          }
-          setIsGettingLocation(false);
+                // Update user's preferred location in backend with coordinates
+                updateUserLocation(currentLocationPlace, {
+                  latitude,
+                  longitude,
+                });
+              } else {
+                alert('Could not get current location address');
+              }
+              setIsGettingLocation(false);
+            }
+          );
         },
         (error) => {
           console.error('Error getting current location:', error);
@@ -176,21 +276,41 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
     }
   };
 
-  const getPlaceDetails = async (placeId: string) => {
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,address_components,formatted_address&key=${googleCloudApiKey}`
+  const getPlaceDetails = async (
+    placeId: string
+  ): Promise<google.maps.places.PlaceResult | null> => {
+    return new Promise((resolve) => {
+      if (!placesService.current) {
+        console.error('Places service not initialized');
+        resolve(null);
+        return;
+      }
+
+      placesService.current.getDetails(
+        {
+          placeId: placeId,
+          fields: ['geometry', 'address_components', 'formatted_address'],
+        },
+        (
+          result: google.maps.places.PlaceResult | null,
+          status: google.maps.places.PlacesServiceStatus
+        ) => {
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            result
+          ) {
+            resolve(result);
+          } else {
+            console.error('Error getting place details:', status);
+            resolve(null);
+          }
+        }
       );
-      const data = await response.json();
-      return data.result;
-    } catch (error) {
-      console.error('Error getting place details:', error);
-      return null;
-    }
+    });
   };
 
   const parseLocationDetails = (
-    addressComponents: any[],
+    addressComponents: google.maps.GeocoderAddressComponent[],
     formattedAddress: string
   ) => {
     let address = '';
@@ -198,7 +318,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
     let state = '';
     let zipcode = '';
 
-    addressComponents.forEach((component: any) => {
+    addressComponents.forEach((component) => {
       const types = component.types;
 
       if (types.includes('street_number') || types.includes('route')) {
@@ -237,23 +357,13 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
     coordinates?: { latitude: number; longitude: number }
   ) => {
     try {
-      let locationData: {
-        name: string;
-        address: string;
-        city: string;
-        state: string;
-        zipcode: string;
-        coordinates: {
-          latitude: number;
-          longitude: number;
-        };
-      };
+      let locationData: LocationData;
 
       if (coordinates) {
         // For current location, we already have coordinates
         const addressParts = place.description
           .split(',')
-          .map((part) => part.trim());
+          .map((part: string) => part.trim());
         const placeName =
           place.structured_formatting?.main_text ||
           addressParts[0] ||
@@ -272,11 +382,27 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
         if (!placeDetails) return;
 
         const { address, city, state, zipcode } = parseLocationDetails(
-          placeDetails.address_components,
-          placeDetails.formatted_address
+          placeDetails.address_components || [],
+          placeDetails.formatted_address || ''
         );
 
         const placeName = place.structured_formatting?.main_text || address;
+
+        // Extract lat/lng from place details
+        let latitude = 0;
+        let longitude = 0;
+
+        if (placeDetails.geometry?.location) {
+          const location = placeDetails.geometry.location;
+          // Handle both LatLng and LatLngLiteral types
+          if (typeof location.lat === 'function') {
+            latitude = location.lat();
+            longitude = location.lng();
+          } else {
+            latitude = (location as unknown as google.maps.LatLngLiteral).lat;
+            longitude = (location as unknown as google.maps.LatLngLiteral).lng;
+          }
+        }
 
         locationData = {
           name: placeName,
@@ -285,8 +411,8 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
           state,
           zipcode: zipcode || '111111',
           coordinates: {
-            latitude: placeDetails.geometry?.location?.lat || 0,
-            longitude: placeDetails.geometry?.location?.lng || 0,
+            latitude,
+            longitude,
           },
         };
       }
@@ -344,11 +470,11 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
           onClick={() => setModalVisible(true)}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <FaLocationDot size={20} className="text-[#12B76A]" />
-          <span className="text-[#1D2739] font-medium text-[16px] max-w-[200px] truncate">
+          <FaLocationDot size={14} className="text-[#12B76A]" />
+          <span className="text-[#1D2739] font-medium text-[14px] max-w-[150px] truncate">
             {selectedLocation}
           </span>
-          <IoChevronDown size={16} className="text-[#667185]" />
+          <IoChevronDown size={16} className="text-[#6C6C6C]" />
         </button>
       ) : (
         <button
@@ -359,7 +485,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
           <span className="text-[#1D2739] font-medium text-[16px]">
             Select Location
           </span>
-          <IoChevronDown size={16} className="text-[#667185]" />
+          <IoChevronDown size={16} className="text-[#6C6C6C]" />
         </button>
       )}
 
@@ -375,27 +501,25 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
             <DialogPanel className="w-full max-w-md rounded-xl bg-white p-6 backdrop-blur-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-[lora] text-[22px] text-[#1D2739] tracking-tight">
-                  Select Location
+                  Select location
                 </h2>
-                {selectedLocation && (
-                  <button
-                    onClick={handleCloseModal}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <IoClose size={24} className="text-[#1D2739]" />
-                  </button>
-                )}
+                <button
+                  onClick={handleCloseModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <IoClose size={24} className="text-[#1D2739]" />
+                </button>
               </div>
 
               <div className="mb-4">
                 <Input
-                  placeholder="Search for a location..."
+                  placeholder="Enter a new location"
                   value={searchText}
                   onChange={(e) => {
                     setSearchText(e.target.value);
                     debouncedSearch(e.target.value);
                   }}
-                  className="!rounded-3xl"
+                  className="!shadow-none !border-none !bg-[#FAFAFA] rounded-lg"
                 />
               </div>
 
@@ -407,9 +531,42 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                 {isGettingLocation ? (
                   <div className="w-5 h-5 border-2 border-[#12B76A] border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <IoLocate size={20} className="text-[#12B76A]" />
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 32 32"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect width="32" height="32" rx="16" fill="#F2FFEC" />
+                    <g clip-path="url(#clip0_80_73471)">
+                      <path
+                        d="M22.0331 10.0351C20.5811 8.47141 9.65896 12.302 9.66797 13.7005C9.6782 15.2864 13.9334 15.7743 15.1128 16.1052C15.822 16.3042 16.012 16.5081 16.1755 17.2519C16.9162 20.6202 17.288 22.2955 18.1356 22.3329C19.4865 22.3926 23.4502 11.5612 22.0331 10.0351Z"
+                        fill="#4C9A2A"
+                        stroke="#4C9A2A"
+                        stroke-width="1.5"
+                      />
+                      <path
+                        d="M15.668 16.9998L16.8346 15.8332L18.0013 14.6665"
+                        stroke="#F2FFEC"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </g>
+                    <defs>
+                      <clipPath id="clip0_80_73471">
+                        <rect
+                          width="16"
+                          height="16"
+                          fill="white"
+                          transform="translate(8 8)"
+                        />
+                      </clipPath>
+                    </defs>
+                  </svg>
                 )}
-                <span className="font-semibold text-[#12B76A] text-[16px]">
+                <span className="font-semibold text-[#4C9A2A] text-[16px]">
                   {isGettingLocation
                     ? 'Getting location...'
                     : 'Use current location'}
@@ -417,8 +574,8 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
               </button>
 
               {!searchText.trim() && recentSearches.length > 0 && (
-                <h3 className="text-[14px] text-[#667185] font-medium mb-2">
-                  Recent Searches
+                <h3 className="text-[14px] text-[#0A0A0A] font-medium mb-2">
+                  Recent searches
                 </h3>
               )}
 
@@ -440,31 +597,37 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                   </div>
                 ) : displayResults.length > 0 ? (
                   <div className="space-y-1">
-                    {displayResults.map((item) => (
-                      <button
-                        key={item.place_id}
-                        onClick={() => handlePlaceSelect(item)}
-                        className="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors w-full text-left border-b border-[#E4E7EC] last:border-b-0"
-                      >
-                        <div className="bg-[#F0F2F5] rounded-full p-2">
-                          <FaLocationDot size={16} className="text-[#667185]" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-[#1D2739] text-[16px]">
-                            {item.structured_formatting?.main_text ||
-                              item.description}
-                          </p>
-                          {item.structured_formatting?.secondary_text && (
-                            <p className="text-[14px] text-[#667185] mt-0.5">
-                              {item.structured_formatting.secondary_text}
+                    {displayResults.map((item) => {
+                      console.log('item', item);
+                      return (
+                        <button
+                          key={item.place_id}
+                          onClick={() => handlePlaceSelect(item)}
+                          className="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors w-full text-left "
+                        >
+                          <div className="bg-[#F0F2F5] rounded-full p-2">
+                            <FaLocationDot
+                              size={16}
+                              className="text-[#6C6C6C]"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-[#0A0A0A] text-[16px] truncate max-w-[250px]">
+                              {item.description ||
+                                item.structured_formatting?.main_text}
                             </p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                            {item.structured_formatting?.secondary_text && (
+                              <p className="text-[14px] text-[#6C6C6C] mt-0.5">
+                                {item.structured_formatting.secondary_text}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <p className="text-center text-[#667185] py-8 text-[16px]">
+                  <p className="text-center text-[#6C6C6C] py-8 text-[16px]">
                     {searchText.trim()
                       ? 'No results found'
                       : 'No recent searches'}

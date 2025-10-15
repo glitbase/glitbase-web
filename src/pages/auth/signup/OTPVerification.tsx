@@ -78,7 +78,7 @@ const OTPVerification = () => {
           <p className="text-[13px] text-[#344054]">Already have an account?</p>
           <button
             onClick={() => navigate('/auth/login')}
-            className="text-[#EE79A9] text-[13px] font-semibold"
+            className="text-[#CC5A88] text-[13px] font-semibold"
           >
             Sign in
           </button>
@@ -126,7 +126,7 @@ const OTPVerification = () => {
               }}
               focusStyle={{
                 outline: 'none',
-                border: isError ? '1px solid #FF2F2F' : '1px solid #EE79A9',
+                border: isError ? '1px solid #FF2F2F' : '1px solid #CC5A88',
               }}
               isInputSecure={false}
             />
@@ -142,7 +142,7 @@ const OTPVerification = () => {
                   <button
                     type="button"
                     onClick={handleResend}
-                    className="text-[#EE79A9] font-semibold cursor-pointer hover:underline"
+                    className="text-[#CC5A88] font-semibold cursor-pointer hover:underline"
                   >
                     Resend code
                   </button>

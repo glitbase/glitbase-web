@@ -1,28 +1,47 @@
-import { useState, useEffect, useRef } from "react";
-import { IoSearchOutline } from "react-icons/io5";
-import { IoClose } from "react-icons/io5";
-import { Input } from "../Inputs/TextInput";
-import View from "@/assets/images/view.svg";
-import Search from "@/assets/images/search.svg";
-import { useNavigate } from "react-router-dom";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { IoSearchOutline } from 'react-icons/io5';
+import { IoClose } from 'react-icons/io5';
+import { Input } from '../Inputs/TextInput';
+import View from '@/assets/images/view.svg';
+import Search from '@/assets/images/search.svg';
+import { useNavigate } from 'react-router-dom';
+import { useServiceSearch } from '@/hooks/useServiceSearch';
 
 interface SearchDropdownProps {
   onSearch?: (value: string) => void;
-  items: any[]; 
+  items?: any[];
 }
 
-const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch, items }) => {
-  const [searchTerm, setSearchTerm] = useState<string>("");
+const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
-  const filteredResults = items?.filter(
-    (item: any) =>
-      item?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item?.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Use the fuzzy search hook
+  const { suggestions, getTrendingSearches } =
+    useServiceSearch(debouncedSearchTerm);
+
+  // Debounce search term
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms debounce
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -34,48 +53,40 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch, items }) => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("recentSearches");
+    const saved = localStorage.getItem('recentSearches');
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
   }, []);
 
-  const handleSearch = (term: string) => {
-    if (term.trim()) {
-      const updatedSearches = [
-        term,
-        ...recentSearches.filter((s) => s !== term),
-      ].slice(0, 5);
-      setRecentSearches(updatedSearches);
-      localStorage.setItem("recentSearches", JSON.stringify(updatedSearches));
+  const handleSearch = useCallback(
+    (term: string) => {
+      if (term.trim()) {
+        const updatedSearches = [
+          term,
+          ...recentSearches.filter((s) => s !== term),
+        ].slice(0, 5);
+        setRecentSearches(updatedSearches);
+        localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
 
-      const results = items?.filter(
-        (item: any) =>
-          item?.name?.toLowerCase().includes(term.toLowerCase()) ||
-          item?.description?.toLowerCase().includes(term.toLowerCase())
-      );
-
-      if (results && results.length > 0) {
         if (onSearch) {
           onSearch(term);
         }
 
-        navigate("/", { state: { searchTerm: term } });
-      } else {
-        if (onSearch) {
-          onSearch(term);
-        }
+        // Navigate to search results page
+        navigate(`/search?q=${encodeURIComponent(term)}`);
         setShowDropdown(false);
       }
-    }
-  };
+    },
+    [recentSearches, onSearch, navigate]
+  );
 
   const handleSuggestionClick = (suggestion: string) => {
     setSearchTerm(suggestion);
@@ -83,15 +94,15 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch, items }) => {
   };
 
   const clearSearch = () => {
-    setSearchTerm("");
+    setSearchTerm('');
     setShowDropdown(false);
     if (onSearch) {
-      onSearch("");
+      onSearch('');
     }
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       handleSearch(searchTerm);
       setShowDropdown(false);
     }
@@ -126,17 +137,18 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch, items }) => {
       </div>
 
       {showDropdown && (
-        <div className="absolute top-[56px] left-0 right-0 mt-2 bg-white rounded-b-[20px] w-[230px] md:w-[600px] lg:w-[1000px] shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
-          {searchTerm && filteredResults?.length > 0 && (
+        <div className="absolute top-[56px] left-0 right-0 mt-2 bg-white rounded-b-[20px] w-[230px] md:w-[fit-content] lg:w-[fit-content] shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+          {/* Live suggestions from fuzzy search */}
+          {searchTerm && suggestions.length > 0 && (
             <div className="p-6">
               <p className="text-[20px] font-[lora] font-medium text-black px-3 py-2">
                 Searching "{searchTerm}"
               </p>
-              {filteredResults?.map((result: any, index: number) => (
+              {suggestions.map((suggestion, index: number) => (
                 <div
                   key={index}
                   className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer rounded-md"
-                  onClick={() => handleSuggestionClick(result.name)}
+                  onClick={() => handleSuggestionClick(suggestion.name)}
                 >
                   <div className="flex items-center">
                     <img
@@ -144,7 +156,16 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch, items }) => {
                       className="w-[20px] mt-1 mr-2 h-[20px] cursor-pointer"
                       alt="Search icon"
                     />
-                    <span className="text-[16px] font-[raleway]">{result.name}</span>
+                    <div className="flex flex-col">
+                      <span className="text-[16px] font-[raleway] capitalize">
+                        {suggestion.name}
+                      </span>
+                      {suggestion.category && (
+                        <span className="text-[12px] text-gray-500 capitalize">
+                          {suggestion.category}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <img
                     src={View}
@@ -156,8 +177,29 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch, items }) => {
             </div>
           )}
 
-          {recentSearches.length > 0 && (
-            <div className="p-6 border-t border-gray-200">
+          {/* Trending Searches - shown when no search term */}
+          {!searchTerm && recentSearches.length === 0 && (
+            <div className="p-6">
+              <p className="text-[20px] font-[lora] font-medium text-black px-3 py-2 mb-3">
+                Trending Searches
+              </p>
+              <div className="flex flex-wrap gap-2 px-3">
+                {getTrendingSearches().map((term, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(term)}
+                    className="px-4 py-2 bg-[#F5F5F5] hover:bg-[#E8E8E8] rounded-full text-[14px] font-medium text-[#1D2739] transition-colors"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent searches */}
+          {!searchTerm && recentSearches.length > 0 && (
+            <div className="p-6">
               <p className="text-[20px] font-[lora] font-medium text-black px-3 py-2">
                 Recent searches
               </p>
@@ -185,7 +227,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch, items }) => {
             </div>
           )}
 
-          {searchTerm && filteredResults?.length === 0 && (
+          {searchTerm && suggestions.length === 0 && (
             <div className="p-4 text-center text-gray-500">
               No results found for "{searchTerm}"
             </div>

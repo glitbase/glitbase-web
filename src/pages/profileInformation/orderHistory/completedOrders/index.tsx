@@ -1,7 +1,7 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Typography } from "@/components/Typography";
-import TrackIcon from "@/assets/images/track.svg";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Typography } from '@/components/Typography';
+import TrackIcon from '@/assets/images/track.svg';
 
 const CompletedOrders = () => {
   return (
@@ -23,7 +23,7 @@ const CompletedOrders = () => {
             ₦20,000
           </Typography>
           <div className="flex gap-4 cursor-pointer">
-            <Typography className="font-[raleway] text-[#EE79A9] font-semibold text-[14px]">
+            <Typography className="font-[raleway] text-[#CC5A88] font-semibold text-[14px]">
               Details
             </Typography>
             <img src={TrackIcon} />

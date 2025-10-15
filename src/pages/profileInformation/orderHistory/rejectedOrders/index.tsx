@@ -1,5 +1,5 @@
-import { Typography } from "@/components/Typography";
-import TrackIcon from "@/assets/images/track.svg";
+import { Typography } from '@/components/Typography';
+import TrackIcon from '@/assets/images/track.svg';
 
 const RejectedOrders = () => {
   return (
@@ -21,7 +21,7 @@ const RejectedOrders = () => {
             ₦20,000
           </Typography>
           <div className="flex gap-4 cursor-pointer">
-            <Typography className="font-[raleway] text-[#EE79A9] font-semibold text-[14px]">
+            <Typography className="font-[raleway] text-[#CC5A88] font-semibold text-[14px]">
               Details
             </Typography>
             <img src={TrackIcon} />
@@ -31,6 +31,6 @@ const RejectedOrders = () => {
       ;
     </div>
   );
-  };
-  
-  export default RejectedOrders;
+};
+
+export default RejectedOrders;

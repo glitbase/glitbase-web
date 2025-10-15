@@ -35,13 +35,13 @@ const AuthLayout = ({
     </div>
   ) : (
     <div className="flex flex-col w-full overflow-hidden justify-center items-center h-screen relative xl:flex-row">
-      <div className="hidden xl:flex xl:w-[420px] xl:max-w-[32rem] xl:h-full relative xl:overflow-hidden bg-[#F4E6D9] shadow-sm">
+      <div className="hidden xl:flex xl:w-[420px] xl:max-w-[32rem] xl:h-full relative xl:overflow-hidden bg-[#F3EDE1] shadow-sm">
         <div className="flex flex-col justify-between h-full w-full  py-10">
           <div className="mt-[-3rem]">
             <img src={new_logo} alt="logo" className="w-[12rem]" />
           </div>
           <div className="flex-1 flex flex-col justify-center items-center mt-[-4rem]">
-            <img src={Spiral} alt="spiral" className="w-full" />
+            <img src={Spiral} alt="spiral" className="w-[full] h-full" />
           </div>
           <div className="mt-1 px-10">
             <p className="font-[lora] font-semibold text-[1.9rem] leading-[2.4rem] text-[#1D2739]">

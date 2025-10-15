@@ -1,22 +1,22 @@
-import React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 
 const inputVariants = cva(
-  "flex min-h-[40px] w-full rounded-lg border shadow-sm border-input bg-white px-3 py-1 placeholder:text-[12px] text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+  'flex min-h-[40px] w-full rounded-m  !bg-[#FAFAFA] px-3 py-1 placeholder:text-[12px] text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: "bg-background",
-        ghost: "border-none shadow-none",
+        default: 'bg-background',
+        ghost: 'border-none shadow-none',
       },
       state: {
-        error: "border-destructive ",
-        default: "",
+        error: 'border-destructive ',
+        default: '',
       },
     },
     defaultVariants: {
-      variant: "default",
-      state: "default",
+      variant: 'default',
+      state: 'default',
     },
   }
 );
@@ -44,7 +44,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           type={type}
           className={inputVariants({
             variant,
-            state: error ? "error" : "default",
+            state: error ? 'error' : 'default',
             className,
           })}
           ref={ref}
@@ -56,6 +56,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-Input.displayName = "Input";
+Input.displayName = 'Input';
 
 export { Input, inputVariants };

@@ -55,7 +55,7 @@ const SideNav = () => {
               <Icon
                 size={20}
                 className={`${
-                  active ? 'text-[#3D7B22]' : 'text-[#667185]'
+                  active ? 'text-[#3D7B22]' : 'text-[#6C6C6C]'
                 } transition-colors`}
               />
               <span

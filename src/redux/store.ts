@@ -1,15 +1,16 @@
-import { configureStore } from "@reduxjs/toolkit";
-import { rootReducer } from "./root-reducer";
-import { authApi } from "./auth";
-import { useDispatch as useReduxDispatch } from "react-redux";
-import { setupListeners } from "@reduxjs/toolkit/query";
+import { configureStore } from '@reduxjs/toolkit';
+import { rootReducer } from './root-reducer';
+import { authApi } from './auth';
+import { useDispatch as useReduxDispatch } from 'react-redux';
+import { setupListeners } from '@reduxjs/toolkit/query';
 // import { paymentApi } from "./payment";
 // import { disputeApi } from "./dispute";
-import { appApi } from "./app";
-import { entityApi } from "./entity";
+import { appApi } from './app';
+import { entityApi } from './entity';
+import { vendorApi } from './vendor';
 
 // Determine if the development tools should be enabled
-const devtool = (import.meta.env.VITE_ENV === "DEV") === true;
+const devtool = (import.meta.env.VITE_ENV === 'DEV') === true;
 
 // Define the middleware array, including the RTK Query middleware
 const middleware = (getDefaultMiddleware: any) =>
@@ -17,6 +18,7 @@ const middleware = (getDefaultMiddleware: any) =>
     appApi.middleware,
     authApi.middleware,
     entityApi.middleware,
+    vendorApi.middleware
   );
 
 export const store = configureStore({

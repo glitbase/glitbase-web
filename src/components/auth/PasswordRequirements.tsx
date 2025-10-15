@@ -1,64 +1,73 @@
-import React from 'react';
-
 interface PasswordRequirementsProps {
   password: string;
 }
 
-export const PasswordRequirements: React.FC<PasswordRequirementsProps> = ({ password }) => {
-  const requirements = {
-    minLength: password.length >= 8,
-    hasUppercase: /[A-Z]/.test(password),
-    hasLowercase: /[a-z]/.test(password),
-    hasNumber: /\d/.test(password),
-    hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-  };
-
-  const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
-    <div className="flex items-center gap-2">
-      <div
-        className={`w-4 h-4 rounded-full flex items-center justify-center ${
-          met ? 'bg-green-500' : 'bg-gray-300'
-        }`}
-      >
-        {met && (
-          <svg
-            className="w-3 h-3 text-white"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path d="M5 13l4 4L19 7"></path>
-          </svg>
-        )}
-      </div>
-      <span className={`text-xs ${met ? 'text-green-700' : 'text-gray-600'}`}>{text}</span>
-    </div>
-  );
-
-  // Only show if password field has content
-  if (!password) return null;
+export const isPasswordValid = (password: string): boolean => {
+  const minLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
   return (
-    <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
-      <p className="text-xs font-medium text-gray-700 mb-2">Password must contain:</p>
-      <RequirementItem met={requirements.minLength} text="At least 8 characters" />
-      <RequirementItem met={requirements.hasUppercase} text="One uppercase letter" />
-      <RequirementItem met={requirements.hasLowercase} text="One lowercase letter" />
-      <RequirementItem met={requirements.hasNumber} text="One number" />
-      <RequirementItem met={requirements.hasSpecialChar} text="One special character" />
-    </div>
+    minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar
   );
 };
 
-export const isPasswordValid = (password: string): boolean => {
+export const PasswordRequirements = ({
+  password,
+}: PasswordRequirementsProps) => {
+  const requirements = [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'One lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'One number', met: /\d/.test(password) },
+    {
+      label: 'One special character',
+      met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    },
+  ];
+
+  if (!password) return null;
+
   return (
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /\d/.test(password) &&
-    /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    <div className="mt-2 space-y-1">
+      {requirements.map((req, index) => (
+        <div key={index} className="flex items-center gap-2">
+          {req.met ? (
+            <svg
+              className="w-4 h-4 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-4 h-4 text-gray-300"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+          <span
+            className={`text-xs ${
+              req.met ? 'text-green-600' : 'text-gray-500'
+            }`}
+          >
+            {req.label}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 };

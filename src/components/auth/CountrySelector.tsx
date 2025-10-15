@@ -1,26 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useFetchCountriesQuery } from '../../redux/app';
 
 export interface Country {
   name: string;
   flag: string;
   dialCode: string;
   code: string;
+  currency?: string;
 }
-
-export const countries: Country[] = [
-  {
-    name: 'Nigeria',
-    flag: '🇳🇬',
-    dialCode: '+234',
-    code: 'NG',
-  },
-  {
-    name: 'United Kingdom',
-    flag: '🇬🇧',
-    dialCode: '+44',
-    code: 'GB',
-  },
-];
 
 interface CountrySelectorProps {
   selectedCountry: Country;
@@ -38,6 +25,14 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
   error,
 }) => {
   const [showModal, setShowModal] = useState(false);
+  const { data: countries = [], isLoading } = useFetchCountriesQuery({});
+
+  // Set default country when countries are loaded and no country is selected
+  useEffect(() => {
+    if (countries.length > 0 && !selectedCountry.code) {
+      onSelectCountry(countries[0]);
+    }
+  }, [countries, selectedCountry.code, onSelectCountry]);
 
   return (
     <div>
@@ -52,10 +47,19 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
         <button
           type="button"
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-3 py-2 border-r border-gray-200 hover:bg-gray-50 transition-colors"
+          disabled={isLoading}
+          className="flex items-center gap-2 px-3 py-2 border-r border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span className="text-xl">{selectedCountry.flag}</span>
-          <span className="text-sm text-gray-700">{selectedCountry.dialCode}</span>
+          {isLoading ? (
+            <span className="text-xs text-gray-500">Loading...</span>
+          ) : (
+            <>
+              <span className="text-xl">{selectedCountry.flag}</span>
+              <span className="text-sm text-gray-700">
+                {selectedCountry.dialCode}
+              </span>
+            </>
+          )}
           <svg
             className="w-4 h-4 text-gray-500"
             fill="none"
@@ -94,7 +98,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
           >
             <h3 className="text-lg font-semibold mb-4">Select Country</h3>
             <div className="space-y-2">
-              {countries.map((country) => (
+              {countries.map((country: Country) => (
                 <button
                   key={country.code}
                   type="button"
@@ -103,7 +107,9 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
                     setShowModal(false);
                   }}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
-                    selectedCountry.code === country.code ? 'bg-[#FFEFF6] border border-[#EE79A9]' : ''
+                    selectedCountry.code === country.code
+                      ? 'bg-[#FFEFF6] border border-[#CC5A88]'
+                      : ''
                   }`}
                 >
                   <span className="text-2xl">{country.flag}</span>
@@ -112,7 +118,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
                     <p className="text-sm text-gray-600">{country.dialCode}</p>
                   </div>
                   {selectedCountry.code === country.code && (
-                    <div className="w-5 h-5 rounded-full bg-[#EE79A9] flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-[#CC5A88] flex items-center justify-center">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="none"

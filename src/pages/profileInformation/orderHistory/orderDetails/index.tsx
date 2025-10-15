@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import HomeLayout from "@/layout/home/HomeLayout";
-import { Typography } from "@/components/Typography";
-import BackIcon from "@/assets/images/back.svg";
-import Delivery from "@/assets/images/delivery.svg";
-import Location from "@/assets/images/location.svg";
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import HomeLayout from '@/layout/home/HomeLayout';
+import { Typography } from '@/components/Typography';
+import BackIcon from '@/assets/images/back.svg';
+import Delivery from '@/assets/images/delivery.svg';
+import Location from '@/assets/images/location.svg';
 
 const OrderDetails = () => {
   // const { orderId } = useParams();
@@ -13,33 +13,33 @@ const OrderDetails = () => {
 
   const orderStatuses = [
     {
-      status: "Order Received",
-      description: "Something about the order",
-      time: "3:35 pm",
+      status: 'Order Received',
+      description: 'Something about the order',
+      time: '3:35 pm',
       completed: true,
     },
     {
-      status: "Order Processing",
-      description: "Your order is being prepared",
-      time: "3:50 pm",
+      status: 'Order Processing',
+      description: 'Your order is being prepared',
+      time: '3:50 pm',
       completed: true,
     },
     {
-      status: "Rider At The Vendor",
-      description: "Your order is on the way",
-      time: "4:15 pm",
+      status: 'Rider At The Vendor',
+      description: 'Your order is on the way',
+      time: '4:15 pm',
       completed: false,
     },
     {
-      status: "Order Arrived",
-      description: "Your order is on the way",
-      time: "4:15 pm",
+      status: 'Order Arrived',
+      description: 'Your order is on the way',
+      time: '4:15 pm',
       completed: false,
     },
     {
-      status: "Order Delivered",
-      description: "Your order is on the way",
-      time: "4:15 pm",
+      status: 'Order Delivered',
+      description: 'Your order is on the way',
+      time: '4:15 pm',
       completed: false,
     },
   ];
@@ -52,7 +52,7 @@ const OrderDetails = () => {
             <img
               src={BackIcon}
               className="cursor-pointer"
-              onClick={() => navigate("/home/profile?activeTab=2")}
+              onClick={() => navigate('/home/profile?activeTab=2')}
             />
             <Typography className="font-[lora] text-[#101928] text-[20px]">
               Track Order
@@ -76,7 +76,7 @@ const OrderDetails = () => {
             </Typography>
 
             <div className="flex gap-2">
-              {["7", "5", "9", "0"].map((number, index) => (
+              {['7', '5', '9', '0'].map((number, index) => (
                 <div
                   key={index}
                   className="bg-[#E7F6EC] text-[#099137] font-semibold font-[raleway] text-[18px] px-3 py-1 rounded"
@@ -91,7 +91,7 @@ const OrderDetails = () => {
               <div
                 className="absolute left-3 w-px bg-[#D0D5DD]"
                 style={{
-                  top: "0px",
+                  top: '0px',
                   height: `${orderStatuses.length * 80 - 22}px`,
                 }}
               />
@@ -99,7 +99,7 @@ const OrderDetails = () => {
               <div
                 className="absolute left-3 w-px bg-[#099137]"
                 style={{
-                  top: "0px",
+                  top: '0px',
                   height: `${
                     Math.min(
                       orderStatuses.filter((s) => s.completed).length,
@@ -125,13 +125,13 @@ const OrderDetails = () => {
                         cx="12"
                         cy="12"
                         r="10"
-                        stroke={item.completed ? "#099137" : "#D0D5DD"}
+                        stroke={item.completed ? '#099137' : '#D0D5DD'}
                         strokeWidth="2"
-                        fill={item.completed ? "#0F973D" : "white"}
+                        fill={item.completed ? '#0F973D' : 'white'}
                       />
                       <path
                         d="M8 12L11 15L16 9"
-                        stroke={item.completed ? "white" : "#D0D5DD"}
+                        stroke={item.completed ? 'white' : '#D0D5DD'}
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -141,13 +141,13 @@ const OrderDetails = () => {
 
                   <div
                     className={`flex justify-between  w-full ${
-                      item.status === "Order Delivered" ? "" : "border-b pb-5"
+                      item.status === 'Order Delivered' ? '' : 'border-b pb-5'
                     }`}
                   >
                     <div className="flex flex-col">
                       <p
                         className={`text-[16px] font-[raleway] ${
-                          item.completed ? "text-[#099137]" : "text-[#475367]"
+                          item.completed ? 'text-[#099137]' : 'text-[#475367]'
                         } font-semibold`}
                       >
                         {item.status}
@@ -156,7 +156,7 @@ const OrderDetails = () => {
                         {item.description}
                       </p>
                     </div>
-                    <p className="text-[14px] font-[raleway] text-[#667185]">
+                    <p className="text-[14px] font-[raleway] text-[#6C6C6C]">
                       {item.time}
                     </p>
                   </div>

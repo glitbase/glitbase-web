@@ -94,7 +94,7 @@ const SignUp = () => {
                     className={`border rounded-lg p-4 cursor-pointer flex items-center justify-between
                 ${
                   selectedOption === option.id
-                    ? 'border-[#EE79A9] bg-[#FFEFF6]'
+                    ? 'border-[#CC5A88] bg-[#FFEFF6]'
                     : 'border-gray-200'
                 }`}
                   >
@@ -117,13 +117,13 @@ const SignUp = () => {
                       className={`w-4 h-4 rounded-full border flex items-center justify-center
                     ${
                       selectedOption === option.id
-                        ? 'border-[#EE79A9] bg-white'
+                        ? 'border-[#CC5A88] bg-white'
                         : 'border-gray-300'
                     }`}
                     >
                       <div
                         className={`w-2 h-2 rounded-full ${
-                          selectedOption === option.id ? 'bg-[#EE79A9]' : ''
+                          selectedOption === option.id ? 'bg-[#CC5A88]' : ''
                         }`}
                       />
                     </div>

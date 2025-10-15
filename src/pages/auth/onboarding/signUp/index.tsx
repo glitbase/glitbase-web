@@ -244,7 +244,7 @@ const Register = () => {
                   id="acceptTerms"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mr-1 rounded border-gray-300 focus:ring-[#EE79A9] appearance-none custom-checkbox cursor-pointer"
+                  className="mr-1 rounded border-gray-300 focus:ring-[#CC5A88] appearance-none custom-checkbox cursor-pointer"
                   required
                 />
 

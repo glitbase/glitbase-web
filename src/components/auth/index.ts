@@ -1,4 +1,4 @@
 export { PasswordRequirements, isPasswordValid } from './PasswordRequirements';
-export { CountrySelector, countries as countriesWithSelector } from './CountrySelector';
-export { CountryDropdown, countries } from './CountryDropdown';
+export { CountrySelector } from './CountrySelector';
+export { CountryDropdown } from './CountryDropdown';
 export type { Country } from './CountryDropdown';

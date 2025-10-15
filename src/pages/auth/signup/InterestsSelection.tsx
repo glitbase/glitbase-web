@@ -109,8 +109,8 @@ const InterestsSelection = () => {
       onClick={() => toggleInterest(interest.id)}
       className={`px-4 py-2 rounded-full border transition-all flex items-center gap-2 ${
         selectedInterests.includes(interest.id)
-          ? 'bg-[#EE79A9] border-[#EE79A9] text-white'
-          : 'bg-white border-gray-300 text-gray-700 hover:border-[#EE79A9]'
+          ? 'bg-[#CC5A88] border-[#CC5A88] text-white'
+          : 'bg-white border-gray-300 text-gray-700 hover:border-[#CC5A88]'
       }`}
     >
       <span>{interest.emoji}</span>

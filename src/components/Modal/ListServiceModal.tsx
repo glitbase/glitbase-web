@@ -1,22 +1,22 @@
-import { FC, useState, FormEvent, useEffect } from "react";
-import { useModal } from "./ModalProvider";
-import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
-import { Button } from "../Buttons";
-import cancelx from "@/assets/images/cancelx.png";
-import { Input } from "../Inputs/TextInput";
-import { Typography } from "../Typography";
-import { CustomSelect } from "../Inputs/SelectInput";
-import { Upload } from "../Inputs/UploadInput";
-import { ModalId } from "@/Layout";
-import successIcon from "@/assets/images/serviceSuccess.svg";
-import { toast } from "react-toastify";
-import { Textarea } from "../Inputs/TextAreaInput";
-import { useListServiceMutation } from "@/redux/auth";
-import { uploadImageToCloudinary } from "@/utils/cloudinaryUtils";
-import { useFetchCategoriesQuery } from "@/redux/app";
-import { tagsList } from "@/utils/tagsList";
-import { handleError } from "@/utils/notify";
-import AddIcon from "@/assets/images/plus.svg";
+import { FC, useState, FormEvent, useEffect } from 'react';
+import { useModal } from './ModalProvider';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
+import { Button } from '../Buttons';
+import cancelx from '@/assets/images/cancelx.png';
+import { Input } from '../Inputs/TextInput';
+import { Typography } from '../Typography';
+import { CustomSelect } from '../Inputs/SelectInput';
+import { Upload } from '../Inputs/UploadInput';
+import { ModalId } from '@/Layout';
+import successIcon from '@/assets/images/serviceSuccess.svg';
+import { toast } from 'react-toastify';
+import { Textarea } from '../Inputs/TextAreaInput';
+import { useListServiceMutation } from '@/redux/auth';
+import { uploadImageToCloudinary } from '@/utils/cloudinaryUtils';
+import { useFetchCategoriesQuery } from '@/redux/app';
+import { tagsList } from '@/utils/tagsList';
+import { handleError } from '@/utils/notify';
+import AddIcon from '@/assets/images/plus.svg';
 
 interface ModalComponentProps {
   modalId: string;
@@ -29,17 +29,17 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
   if (!isOpen) return null;
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [serviceName, setServiceName] = useState("");
-  const [serviceDuration, setServiceDuration] = useState("");
+  const [serviceName, setServiceName] = useState('');
+  const [serviceDuration, setServiceDuration] = useState('');
 
   // const [durationHours, setDurationHours] = useState<number>(0);
   // const [durationMinutes, setDurationMinutes] = useState<number>(0);
 
-  const [serviceCategory, setServiceCategory] = useState("");
-  const [serviceSubCategory, setServiceSubCategory] = useState("");
+  const [serviceCategory, setServiceCategory] = useState('');
+  const [serviceSubCategory, setServiceSubCategory] = useState('');
   // const [availabilityTime, setAvailabilityTime] = useState<string[]>([]);
-  const [servicePrice, setServicePrice] = useState("");
-  const [description, setDescription] = useState("");
+  const [servicePrice, setServicePrice] = useState('');
+  const [description, setDescription] = useState('');
   const [tags, setTags] = useState<{ value: string; label: string }[]>([]);
   // const [cropActive, setCropActive] = useState(false);
   // const [image, setImage] = useState<string | null>(null);
@@ -57,10 +57,9 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
   const [serviceImages, setServiceImages] = useState<(string | null)[]>(
     Array(6).fill(null)
   );
-  
 
   const [addOns, setAddOns] = useState([
-    { name: "", description: "", price: "" },
+    { name: '', description: '', price: '' },
   ]);
 
   const [cropActive1, setCropActive1] = useState(false);
@@ -80,22 +79,29 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
     []
   );
 
-  const { data: categories = [] } =
-    useFetchCategoriesQuery("service");
+  const { data: categories = [] } = useFetchCategoriesQuery('service');
 
   // const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
-  console.log(cropActive1, cropActive2, cropActive3, cropActive4, cropActive5, cropActive6, serviceImages);
-  
+  console.log(
+    cropActive1,
+    cropActive2,
+    cropActive3,
+    cropActive4,
+    cropActive5,
+    cropActive6,
+    serviceImages
+  );
+
   useEffect(() => {
     if (!isOpen) {
       // Reset state when modal is closed
-      setServiceName("");
-      setServiceDuration("");
-      setDescription("");
-      setServicePrice("");
-      setServiceCategory("");
-      setServiceSubCategory("");
+      setServiceName('');
+      setServiceDuration('');
+      setDescription('');
+      setServicePrice('');
+      setServiceCategory('');
+      setServiceSubCategory('');
       setSelectedServiceTypes([]);
       setTags([]);
       setAddOns([]);
@@ -122,36 +128,38 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
   }, [isOpen]);
 
   const serviceType = [
-    { id: "Walk-In", title: "Walk-In" },
-    { id: "Home Service", title: "Home Service" },
+    { id: 'Walk-In', title: 'Walk-In' },
+    { id: 'Home Service', title: 'Home Service' },
   ];
 
-  const parseDuration = (durationString: string): { hours: number, minutes: number } | null => {
+  const parseDuration = (
+    durationString: string
+  ): { hours: number; minutes: number } | null => {
     if (!durationString.trim()) {
       return null;
     }
-    
+
     const input = durationString.toLowerCase().trim();
-    
+
     let hours = 0;
     let minutes = 0;
-    
+
     const hoursRegex = /(\d+)\s*(hour|hours|hr|hrs)/;
     const hoursMatch = input.match(hoursRegex);
     if (hoursMatch) {
       hours = parseInt(hoursMatch[1], 10);
     }
-    
+
     const minutesRegex = /(\d+)\s*(minute|minutes|min|mins)/;
     const minutesMatch = input.match(minutesRegex);
     if (minutesMatch) {
       minutes = parseInt(minutesMatch[1], 10);
     }
-    
+
     if (hours === 0 && minutes === 0) {
       return null;
     }
-    
+
     return { hours, minutes };
   };
 
@@ -165,12 +173,12 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
   };
 
   const handleAddNewAddOn = () => {
-    setAddOns([...addOns, { name: "", description: "", price: "" }]);
+    setAddOns([...addOns, { name: '', description: '', price: '' }]);
   };
 
   const handleAddOnChange = (
     index: number,
-    field: "name" | "description" | "price",
+    field: 'name' | 'description' | 'price',
     value: string
   ) => {
     const updatedAddOns = [...addOns];
@@ -214,7 +222,7 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
   // };
 
   const handleFullImage1 = (file: File) => {
-    console.log("handleFullImage1 called with file:", file.name);
+    console.log('handleFullImage1 called with file:', file.name);
     setProcessedImage1(file);
   };
 
@@ -308,21 +316,21 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
 
   const isStepOneValid = () => {
     return (
-      serviceName.trim() !== "" &&
-      serviceDuration.trim() !== "" &&
-      description.trim() !== ""
+      serviceName.trim() !== '' &&
+      serviceDuration.trim() !== '' &&
+      description.trim() !== ''
     );
   };
-  
+
   const isStepTwoValid = () => {
     return (
-      servicePrice.trim() !== "" &&
-      serviceCategory.trim() !== "" &&
-      serviceSubCategory.trim() !== "" &&
+      servicePrice.trim() !== '' &&
+      serviceCategory.trim() !== '' &&
+      serviceSubCategory.trim() !== '' &&
       selectedServiceTypes.length > 0
     );
   };
-  
+
   const isFormValid = () => {
     return isStepOneValid() && isStepTwoValid();
   };
@@ -331,7 +339,7 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
     e.preventDefault();
 
     if (!processedImage1) {
-      toast.error("Please upload at least one product image");
+      toast.error('Please upload at least one product image');
       return;
     }
 
@@ -341,13 +349,15 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
     // }
 
     if (!selectedServiceTypes) {
-      toast.error("Please select a service type");
+      toast.error('Please select a service type');
       return;
     }
 
     const parsedDuration = parseDuration(serviceDuration);
     if (!parsedDuration) {
-      toast.error("Please enter a valid duration (e.g., '1 hour 30 minutes', '45 minutes', '2 hours')");
+      toast.error(
+        "Please enter a valid duration (e.g., '1 hour 30 minutes', '45 minutes', '2 hours')"
+      );
       return;
     }
 
@@ -376,25 +386,25 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
         category: serviceCategory,
         subcategory: serviceSubCategory,
         price: parseFloat(servicePrice),
-        currency: "NGN",
+        currency: 'NGN',
         deliveryOptions: selectedServiceTypes,
         tags: tags.map((tag) => tag.value),
         addOns: addOns
-        .filter(addOn => addOn.name.trim() !== "")
-        .map((addOn) => ({
-          name: addOn.name,
-          description: addOn.description,
-          price: addOn.price ? parseFloat(addOn.price) || 0 : 0,
-        })),
+          .filter((addOn) => addOn.name.trim() !== '')
+          .map((addOn) => ({
+            name: addOn.name,
+            description: addOn.description,
+            price: addOn.price ? parseFloat(addOn.price) || 0 : 0,
+          })),
       };
 
       const response = await listService(payload).unwrap();
-      console.log("Service submitted:", response);
+      console.log('Service submitted:', response);
 
       hideModal(modalId);
       showModal(ModalId.SUCCESS_MODAL, {
-        message: "Service submitted for listing",
-        type: "service",
+        message: 'Service submitted for listing',
+        type: 'service',
         icon: (
           <img src={successIcon} className="w-[133px] h-[68px]" alt="Success" />
         ),
@@ -424,9 +434,9 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
               transition
               className="py-[24px] rounded-[28px] max-h-[95vh] overflow-hidden overflow-y-auto bg-white shadow-md backdrop-blur-2xl duration-300 ease-out data-[closed]:transform-[scale(95%)] data-[closed]:opacity-0 w-[470px]"
               style={{
-                msOverflowStyle: "none",
-                scrollbarWidth: "none",
-                WebkitOverflowScrolling: "touch",
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none',
+                WebkitOverflowScrolling: 'touch',
               }}
             >
               <div className="w-full">
@@ -442,7 +452,7 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
                     {currentStep === 3 ? (
                       <div className="flex justify-between items-center">
                         <Typography className="text-[18px] font-medium font-[lora]">
-                          Add-Ons{" "}
+                          Add-Ons{' '}
                           <span className="text-[#8F8F95]">(Optional)</span>
                         </Typography>
                         <button
@@ -465,19 +475,19 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
                 <div className="flex w-full mt-[15px]">
                   <div
                     className={`h-[5px] rounded-r-[8px] flex-1 ${
-                      currentStep >= 1 ? "bg-[#D01361]" : "bg-[#FFCBE0]"
+                      currentStep >= 1 ? 'bg-[#D01361]' : 'bg-[#FFCBE0]'
                     }`}
                   />
                   <div className="w-[10px]" />
                   <div
                     className={`h-[5px] flex-1 rounded-[8px] ${
-                      currentStep >= 2 ? "bg-[#D01361]" : "bg-[#FFCBE0]"
+                      currentStep >= 2 ? 'bg-[#D01361]' : 'bg-[#FFCBE0]'
                     }`}
                   />
                   <div className="w-[10px]" />
                   <div
                     className={`h-[5px] flex-1 rounded-l-[8px] ${
-                      currentStep >= 3 ? "bg-[#D01361]" : "bg-[#FFCBE0]"
+                      currentStep >= 3 ? 'bg-[#D01361]' : 'bg-[#FFCBE0]'
                     }`}
                   />
                 </div>
@@ -540,8 +550,8 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
                             key={type.id}
                             className={`flex flex-col py-3 px-3 rounded-[12px] justify-center text-center items-center cursor-pointer ${
                               selectedServiceTypes.includes(type.id)
-                                ? "bg-[#FFEFF6] border-2 border-[#EE79A9]"
-                                : "bg-white border-2 text-[#86818B] border-[#D8D8D8]"
+                                ? 'bg-[#FFEFF6] border-2 border-[#CC5A88]'
+                                : 'bg-white border-2 text-[#86818B] border-[#D8D8D8]'
                             }`}
                             onClick={() => handleServiceTypeClick(type.id)}
                           >
@@ -706,7 +716,7 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
                           <Input
                             value={addOn.name}
                             onChange={(e) =>
-                              handleAddOnChange(index, "name", e.target.value)
+                              handleAddOnChange(index, 'name', e.target.value)
                             }
                             label={`Name`}
                             placeholder="E.g. Facial treatment "
@@ -716,7 +726,7 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
                             onChange={(e) =>
                               handleAddOnChange(
                                 index,
-                                "description",
+                                'description',
                                 e.target.value
                               )
                             }
@@ -726,7 +736,7 @@ const ListServiceModal: FC<ModalComponentProps> = ({ modalId }) => {
                           <Input
                             value={addOn.price}
                             onChange={(e) =>
-                              handleAddOnChange(index, "price", e.target.value)
+                              handleAddOnChange(index, 'price', e.target.value)
                             }
                             label={`Amount`}
                             placeholder="0.00"

@@ -31,3 +31,4 @@ pnpm-lock.yaml
 *.sln
 *.sw?
 .vercel
+VENDOR_ONBOARDING_WEB_GUIDE.md

@@ -61,7 +61,7 @@ const UserTypeSelection = () => {
           <div className="mb-6">
             <div className="w-full bg-gray-200 rounded-full h-1">
               <div
-                className="bg-[#EE79A9] h-1 rounded-full"
+                className="bg-[#CC5A88] h-1 rounded-full"
                 style={{ width: '33%' }}
               />
             </div>
@@ -74,7 +74,7 @@ const UserTypeSelection = () => {
             >
               What's your role?
             </Typography>
-            <p className="text-left font-medium text-[1rem] text-[#667185] !mt-3">
+            <p className="text-left font-medium text-[1rem] text-[#6C6C6C] !mt-3">
               Select your role so we can personalize your experience based on
               your goals
             </p>
@@ -88,7 +88,7 @@ const UserTypeSelection = () => {
                 className={`border rounded-lg p-4 cursor-pointer flex items-center justify-between transition-all
                 ${
                   selectedUserType === option.value
-                    ? 'border-[#EE79A9] bg-[#FFEFF6]'
+                    ? 'border-[#CC5A88] bg-[#FFEFF6]'
                     : 'border-gray-200'
                 }`}
               >
@@ -116,13 +116,13 @@ const UserTypeSelection = () => {
                   className={`w-4 h-4 rounded-full border flex items-center justify-center
                     ${
                       selectedUserType === option.value
-                        ? 'border-[#EE79A9] bg-white'
+                        ? 'border-[#CC5A88] bg-white'
                         : 'border-gray-300'
                     }`}
                 >
                   <div
                     className={`w-2 h-2 rounded-full ${
-                      selectedUserType === option.value ? 'bg-[#EE79A9]' : ''
+                      selectedUserType === option.value ? 'bg-[#CC5A88]' : ''
                     }`}
                   />
                 </div>
