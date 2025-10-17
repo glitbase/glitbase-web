@@ -1,34 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import Card from "../Card";
-import { useSearchParams } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import Card from '../Card';
+import { useSearchParams } from 'react-router-dom';
 
 // Define tabVariants using class-variance-authority with Tailwind classes
 const tabVariants = cva(
-  "transition-all duration-300 ease-in-out cursor-pointer flex items-center justify-center", // Base styles
+  'transition-all duration-300 ease-in-out cursor-pointer flex items-center justify-center', // Base styles
   {
     variants: {
       variant: {
-        default: "bg-white",
-        primary: "bg-primary text-white",
-        outlined: "border border-gray-200",
+        default: 'bg-white',
+        primary: 'bg-primary text-white',
+        outlined: 'border border-gray-200',
       },
       padding: {
-        sm: "p-2",
-        md: "p-4",
-        lg: "p-6",
+        sm: 'p-2',
+        md: 'p-4',
+        lg: 'p-6',
       },
       borderRadius: {
-        none: "rounded-none",
+        none: 'rounded-none',
       },
       active: {
-        true: "!bg-[#F4BD3D] text-white font-medium border-b-[2.5px] border-b-[#2652E7]",
-        false: "text-[#667085] font-medium border-b-[0.5px] border-b-[#BEBDBD]",
+        true: '!bg-[#F4BD3D] text-white font-medium border-b-[2.5px] border-b-[#2652E7]',
+        false: 'text-[#6C6C6C] font-medium border-b-[0.5px] border-b-[#BEBDBD]',
       },
     },
     defaultVariants: {
-      variant: "default",
-      padding: "md",
+      variant: 'default',
+      padding: 'md',
       active: false,
     },
   }
@@ -82,9 +82,9 @@ const Tab: React.FC<TabProps> = ({
 interface TabsProps {
   tabs: string[]; // Array of tab labels
   content: React.ReactNode[]; // Array of content corresponding to each tab
-  variant?: VariantProps<typeof tabVariants>["variant"];
-  padding?: VariantProps<typeof tabVariants>["padding"];
-  borderRadius?: VariantProps<typeof tabVariants>["borderRadius"];
+  variant?: VariantProps<typeof tabVariants>['variant'];
+  padding?: VariantProps<typeof tabVariants>['padding'];
+  borderRadius?: VariantProps<typeof tabVariants>['borderRadius'];
 }
 
 // Tabs Component
@@ -96,7 +96,7 @@ const Tabs: React.FC<TabsProps> = ({
   borderRadius,
 }) => {
   const [searchParams] = useSearchParams();
-  const tab = searchParams.get("tab");
+  const tab = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(0);
   useEffect(() => {
     if (tab) {

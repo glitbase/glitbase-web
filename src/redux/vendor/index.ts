@@ -74,8 +74,8 @@ export const vendorApi = createApi({
       },
     }),
     updatePayoutInfo: builder.mutation({
-      query: ({ id, ...payload }) => ({
-        url: `/api/v1/payout-info/${id}`,
+      query: ({ ...payload }) => ({
+        url: `/api/v1/payout-info`,
         method: 'PATCH',
         body: payload,
       }),

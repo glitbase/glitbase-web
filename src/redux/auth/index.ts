@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '../configure';
 import { setAuthenticated, setUnauthenticated, setUser } from './authSlice';
@@ -93,7 +94,11 @@ export const authApi = createApi({
         try {
           await queryFulfilled;
           dispatch(setUnauthenticated());
-        } catch {}
+          // Reset the entire auth API cache on logout
+          dispatch(authApi.util.resetApiState());
+        } catch {
+          /* empty */
+        }
       },
     }),
     forgotPassword: builder.mutation({
@@ -180,6 +185,13 @@ export const authApi = createApi({
         body: payload,
       }),
     }),
+    updateNotificationPreferences: builder.mutation({
+      query: (payload) => ({
+        url: '/api/v1/users/notification-preferences',
+        method: 'PATCH',
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -203,5 +215,6 @@ export const {
   useListServiceMutation,
   useSwitchActiveRoleMutation,
   useGetInspirationCategoriesQuery,
+  useUpdateNotificationPreferencesMutation,
   useUpdateUserProfileMutation,
 } = authApi;

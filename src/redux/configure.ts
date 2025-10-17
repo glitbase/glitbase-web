@@ -1,7 +1,9 @@
-import { fetchBaseQuery } from "@reduxjs/toolkit/query";
-import { navigateTo } from "./navigationSlice";
-import { Tokens } from "../AuthContext";
-import { setLoading } from "./auth/authSlice";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { fetchBaseQuery } from '@reduxjs/toolkit/query';
+import { navigateTo } from './navigationSlice';
+import { Tokens } from '../AuthContext';
+import { setLoading } from './auth/authSlice';
 
 let hasHandledSessionError = false;
 
@@ -9,11 +11,11 @@ const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_URL,
   timeout: 180000,
   prepareHeaders: (headers) => {
-    const tokensString = localStorage.getItem("tokens");
+    const tokensString = localStorage.getItem('tokens');
     const tokens: Tokens = tokensString ? JSON.parse(tokensString) : null;
 
     if (tokens && tokens.accessToken) {
-      headers.set("Authorization", `Bearer ${tokens.accessToken}`);
+      headers.set('Authorization', `Bearer ${tokens.accessToken}`);
     }
     return headers;
   },
@@ -24,9 +26,9 @@ const refreshAccessToken = async (refreshToken: string): Promise<Tokens> => {
     const refreshResponse = await fetch(
       `${import.meta.env.VITE_API_URL}/api/v1/auth/refresh-user-token`,
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${refreshToken}`,
         },
         body: JSON.stringify({}),
@@ -41,7 +43,7 @@ const refreshAccessToken = async (refreshToken: string): Promise<Tokens> => {
     console.log(data);
     return data.data.tokens;
   } catch (error) {
-    console.error("Token refresh failed:", error);
+    console.error('Token refresh failed:', error);
     throw error;
   }
 };
@@ -54,16 +56,16 @@ export const baseQueryWithReauth = async (
   let result = await baseQuery(args, api, extraOptions);
 
   if (result.error && result.error.status === 401) {
-    const tokensString = localStorage.getItem("tokens");
+    const tokensString = localStorage.getItem('tokens');
     const tokens: Tokens = tokensString ? JSON.parse(tokensString) : null;
     console.log(tokens);
     if (tokens?.refreshToken) {
       api.dispatch(setLoading(true));
-      console.log("refreshing token");
+      console.log('refreshing token');
       try {
         const newTokens = await refreshAccessToken(tokens.refreshToken);
 
-        localStorage.setItem("tokens", JSON.stringify(newTokens));
+        localStorage.setItem('tokens', JSON.stringify(newTokens));
 
         result = await baseQuery(
           {
@@ -89,15 +91,15 @@ export const baseQueryWithReauth = async (
 };
 
 const handleApiErrors = (error: any, api: any) => {
-  let errorMessage = "";
+  let errorMessage = '';
 
   switch (error.data?.message) {
-    case "Invalid Token":
-    case "Session expired":
-    case "You have been logged out":
+    case 'Invalid Token':
+    case 'Session expired':
+    case 'You have been logged out':
       if (!hasHandledSessionError) {
         hasHandledSessionError = true;
-        errorMessage = "Your session has expired. Please log in again.";
+        errorMessage = 'Your session has expired. Please log in again.';
 
         api.dispatch(
           navigateTo({
@@ -107,12 +109,12 @@ const handleApiErrors = (error: any, api: any) => {
         );
       }
       break;
-    case "ThrottlerException: Too Many Requests":
-      errorMessage = "Too many requests. Please try again later.";
+    case 'ThrottlerException: Too Many Requests':
+      errorMessage = 'Too many requests. Please try again later.';
       // Display a notification or alert here if desired
       break;
     default:
-      console.log("API error", error);
+      console.log('API error', error);
       return;
   }
 };

@@ -14,7 +14,7 @@ import ProviderCardSkeleton from '@/components/EntityCards/ProviderCardSkeleton'
 import CategoryCardSkeleton from '@/components/EntityCards/CategoryCardSkeleton';
 import VendorHome from './VendorHome';
 import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
-import spiral from '@/assets/images/spiral.svg';
+import spiral2 from '@/assets/images/spiral2.svg';
 import { useModal } from '@/components/Modal/ModalProvider';
 import { ModalId } from '@/Layout';
 
@@ -227,7 +227,7 @@ const Home = () => {
             </div>
             <div className="absolute right-0 top-0 h-full">
               <img
-                src={spiral}
+                src={spiral2}
                 alt="banner"
                 className="w-full h-full object-cover"
               />
