@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import {
@@ -238,7 +239,7 @@ const NotificationsTab = () => {
 
           {/* Section Items */}
           <div className="space-y-0">
-            {section.items.map((item, itemIndex) => (
+            {section.items.map((item) => (
               <div
                 key={item.key}
                 className={`bg-[#F9FAFB] p-4 flex items-start justify-between ${
@@ -263,7 +264,7 @@ const NotificationsTab = () => {
                     disabled={item.disabled || isLoading}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       item.enabled && !item.disabled
-                        ? 'bg-[#F24E1E]'
+                        ? 'bg-[#FF71AA]'
                         : 'bg-[#D0D5DD]'
                     } ${
                       item.disabled ? 'cursor-not-allowed' : 'cursor-pointer'

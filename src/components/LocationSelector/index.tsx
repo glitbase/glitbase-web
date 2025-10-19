@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import { FaLocationDot } from 'react-icons/fa6';
-import { IoClose, IoChevronDown } from 'react-icons/io5';
+import { IoClose, IoChevronDown, IoSearch } from 'react-icons/io5';
 import { debounce } from 'lodash';
 import {
   useUpdateUserProfileMutation,
@@ -11,6 +11,8 @@ import { useAppSelector } from '@/hooks/redux-hooks';
 import { Input } from '@/components/Inputs/TextInput';
 
 const googleCloudApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const SELECTED_LOCATION_KEY = 'selected_location';
+const RECENT_SEARCHES_KEY = 'recent_location_searches';
 
 interface PlaceResult {
   place_id: string;
@@ -54,12 +56,19 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
 
   useEffect(() => {
     loadRecentSearches();
-    // Load user's preferred location if available
-    if (user?.preferredLocation?.name) {
+
+    // First, try to load from session storage
+    const storedLocation = sessionStorage.getItem(SELECTED_LOCATION_KEY);
+    if (storedLocation) {
+      setSelectedLocation(storedLocation);
+    } else if (user?.preferredLocation?.name) {
+      // Fallback to user's preferred location if no session storage
       const displayLocation = user.preferredLocation.city
         ? `${user.preferredLocation.name}, ${user.preferredLocation.city}`
         : user.preferredLocation.name;
       setSelectedLocation(displayLocation);
+      // Save to session storage
+      sessionStorage.setItem(SELECTED_LOCATION_KEY, displayLocation);
     }
   }, [user]);
 
@@ -105,7 +114,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
 
   const loadRecentSearches = async () => {
     try {
-      const stored = localStorage.getItem('recent_location_searches');
+      const stored = sessionStorage.getItem(RECENT_SEARCHES_KEY);
       if (stored) {
         setRecentSearches(JSON.parse(stored));
       }
@@ -120,7 +129,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
         place,
         ...recentSearches.filter((p) => p.place_id !== place.place_id),
       ].slice(0, 10);
-      localStorage.setItem('recent_location_searches', JSON.stringify(updated));
+      sessionStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
       setRecentSearches(updated);
     } catch (error) {
       console.error('Error saving recent search:', error);
@@ -246,6 +255,8 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                   .replace(/,\s*$/, '');
 
                 setSelectedLocation(fullLocation);
+                // Save to session storage
+                sessionStorage.setItem(SELECTED_LOCATION_KEY, fullLocation);
                 saveRecentSearch(currentLocationPlace);
                 setModalVisible(false);
                 setSearchText('');
@@ -444,6 +455,8 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
       : mainText;
 
     setSelectedLocation(displayLocation);
+    // Save to session storage
+    sessionStorage.setItem(SELECTED_LOCATION_KEY, displayLocation);
     saveRecentSearch(place);
     setModalVisible(false);
     setSearchText('');
@@ -511,59 +524,60 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                 </button>
               </div>
 
-              <div className="mb-4">
-                <Input
+              <div className="mb-4 relative">
+                <IoSearch
+                  size={20}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6C6C6C]"
+                />
+                <input
+                  type="text"
                   placeholder="Enter a new location"
                   value={searchText}
                   onChange={(e) => {
                     setSearchText(e.target.value);
                     debouncedSearch(e.target.value);
                   }}
-                  className="!shadow-none !border-none !bg-[#FAFAFA] rounded-lg"
+                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAFA] border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4C9A2A]/20 text-[#1D2739] placeholder:text-[#98A2B3]"
                 />
+                {searchText && (
+                  <button
+                    onClick={() => {
+                      setSearchText('');
+                      setSearchResults([]);
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#6C6C6C] hover:text-[#1D2739]"
+                  >
+                    <IoClose size={20} />
+                  </button>
+                )}
               </div>
 
               <button
                 onClick={getCurrentLocation}
                 disabled={isGettingLocation}
-                className="flex items-center gap-2 py-3 mb-4 hover:bg-gray-50 rounded-lg transition-colors w-full"
+                className="flex items-center gap-3 py-3 px-2 mb-4 hover:bg-[#F9FAFB] rounded-lg transition-colors w-full disabled:opacity-70"
               >
                 {isGettingLocation ? (
-                  <div className="w-5 h-5 border-2 border-[#12B76A] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-2 border-[#4C9A2A] border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <svg
-                    width="32"
-                    height="32"
-                    viewBox="0 0 32 32"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <rect width="32" height="32" rx="16" fill="#F2FFEC" />
-                    <g clip-path="url(#clip0_80_73471)">
-                      <path
-                        d="M22.0331 10.0351C20.5811 8.47141 9.65896 12.302 9.66797 13.7005C9.6782 15.2864 13.9334 15.7743 15.1128 16.1052C15.822 16.3042 16.012 16.5081 16.1755 17.2519C16.9162 20.6202 17.288 22.2955 18.1356 22.3329C19.4865 22.3926 23.4502 11.5612 22.0331 10.0351Z"
-                        fill="#4C9A2A"
-                        stroke="#4C9A2A"
-                        stroke-width="1.5"
-                      />
-                      <path
-                        d="M15.668 16.9998L16.8346 15.8332L18.0013 14.6665"
-                        stroke="#F2FFEC"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </g>
-                    <defs>
-                      <clipPath id="clip0_80_73471">
-                        <rect
-                          width="16"
-                          height="16"
-                          fill="white"
-                          transform="translate(8 8)"
-                        />
-                      </clipPath>
-                    </defs>
+                    <path
+                      d="M17.0249 7.52632C16.1858 6.60249 7.49422 9.22632 7.50093 10.2754C7.50865 11.4648 10.4501 11.8307 11.3346 12.0789C11.8665 12.2281 12.009 12.3811 12.1316 12.9389C12.6872 15.4651 12.966 16.7216 13.6017 16.7497C14.6149 16.7945 17.5877 8.67092 17.0249 7.52632Z"
+                      fill="#4C9A2A"
+                    />
+                    <path
+                      d="M11.751 13L12.626 12.125L13.501 11.25"
+                      stroke="white"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
                   </svg>
                 )}
                 <span className="font-semibold text-[#4C9A2A] text-[16px]">
@@ -596,28 +610,27 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                     ))}
                   </div>
                 ) : displayResults.length > 0 ? (
-                  <div className="space-y-1">
+                  <div className="space-y-0">
                     {displayResults.map((item) => {
-                      console.log('item', item);
                       return (
                         <button
                           key={item.place_id}
                           onClick={() => handlePlaceSelect(item)}
-                          className="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors w-full text-left "
+                          className="flex items-center gap-3 py-3 px-2 hover:bg-[#F9FAFB] rounded-lg transition-colors w-full text-left"
                         >
-                          <div className="bg-[#F0F2F5] rounded-full p-2">
+                          <div className="bg-[#F0F2F5] rounded-full p-2 flex-shrink-0">
                             <FaLocationDot
                               size={16}
                               className="text-[#6C6C6C]"
                             />
                           </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-[#0A0A0A] text-[16px] truncate max-w-[250px]">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-[#0A0A0A] text-[16px] truncate">
                               {item.description ||
                                 item.structured_formatting?.main_text}
                             </p>
                             {item.structured_formatting?.secondary_text && (
-                              <p className="text-[14px] text-[#6C6C6C] mt-0.5">
+                              <p className="text-[14px] text-[#6C6C6C] mt-0.5 truncate">
                                 {item.structured_formatting.secondary_text}
                               </p>
                             )}
@@ -626,11 +639,19 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                       );
                     })}
                   </div>
+                ) : searchText.trim() ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <h3 className="font-semibold text-[#0A0A0A] text-[18px] mb-2">
+                      No results found
+                    </h3>
+                    <p className="text-[#6C6C6C] text-[14px] max-w-[280px]">
+                      We couldn't locate this address. Please check your
+                      spelling or try a different address
+                    </p>
+                  </div>
                 ) : (
-                  <p className="text-center text-[#6C6C6C] py-8 text-[16px]">
-                    {searchText.trim()
-                      ? 'No results found'
-                      : 'No recent searches'}
+                  <p className="text-center text-[#6C6C6C] py-8 text-[14px]">
+                    No recent searches
                   </p>
                 )}
               </div>

@@ -7,6 +7,7 @@ import appSlice from './app/appSlice';
 import { appApi } from './app';
 import { entityApi } from './entity';
 import { vendorApi } from './vendor';
+import storeSlice from './vendor/storeSlice';
 
 export const rootReducer = combineReducers({
   [authApi.reducerPath]: authApi.reducer,
@@ -17,4 +18,5 @@ export const rootReducer = combineReducers({
   app: appSlice,
   system: systemSlice,
   navigation: navigationSlice,
+  vendorStore: storeSlice,
 });

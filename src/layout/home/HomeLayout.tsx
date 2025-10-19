@@ -13,7 +13,7 @@ import { useModal } from '@/components/Modal/ModalProvider';
 import { BsStars } from 'react-icons/bs';
 import SearchDropdown from '@/components/SearchDropdown';
 import SideNav from './SideNav';
-import LocationSelector from '@/components/LocationSelector';
+import LocationSelector from '@/components/LocationSelector/index';
 
 interface HomeLayoutProps {
   children?: React.ReactNode;

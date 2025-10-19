@@ -1,17 +1,21 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
 import { GoHome } from 'react-icons/go';
 import { BsChatDots } from 'react-icons/bs';
 import { IoNotificationsOutline } from 'react-icons/io5';
 import { BsCalendar3 } from 'react-icons/bs';
 import { MdOutlineTravelExplore } from 'react-icons/md';
 import { IoSettingsOutline } from 'react-icons/io5';
+import { BsShop } from 'react-icons/bs';
 import Logo from '@/assets/images/green-logo.svg';
 
 const SideNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useSelector((state: RootState) => state.auth.user);
 
-  const menuItems = [
+  const baseMenuItems = [
     { label: 'Home', icon: GoHome, path: '/' },
     { label: 'Inbox', icon: BsChatDots, path: '/inbox' },
     {
@@ -20,9 +24,21 @@ const SideNav = () => {
       path: '/notifications',
     },
     { label: 'Bookings', icon: BsCalendar3, path: '/bookings' },
+  ];
+
+  const vendorMenuItems = [
+    { label: 'Store', icon: BsShop, path: '/vendor/store' },
+  ];
+
+  const commonMenuItems = [
     { label: 'Glitfinder', icon: MdOutlineTravelExplore, path: '/glitfinder' },
     { label: 'Settings', icon: IoSettingsOutline, path: '/settings' },
   ];
+
+  // Show Store menu for vendors
+  const menuItems = user?.activeRole === 'vendor'
+    ? [...baseMenuItems, ...vendorMenuItems, ...commonMenuItems]
+    : [...baseMenuItems, ...commonMenuItems];
 
   const isActive = (path: string) => {
     if (path === '/') {

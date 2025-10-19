@@ -185,7 +185,7 @@ const StoreAvailability = () => {
                     <button
                       onClick={() => handleToggle(day.value)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        dayData.isOpen ? 'bg-[#F24E1E]' : 'bg-[#D0D5DD]'
+                        dayData.isOpen ? 'bg-[#FF71AA]' : 'bg-[#D0D5DD]'
                       }`}
                     >
                       <span
