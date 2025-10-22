@@ -1,25 +1,25 @@
-import React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { HiArrowNarrowLeft } from "react-icons/hi";
-import { useNavigate } from "react-router";
+import React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { HiArrowNarrowLeft } from 'react-icons/hi';
+import { useNavigate } from 'react-router';
 
-const goBackVariants = cva("flex items-center cursor-pointer", {
+const goBackVariants = cva('flex items-center cursor-pointer', {
   variants: {
     variant: {
-      withBackground: "bg-gray-200 hover:bg-gray-300",
-      default: "text-black",
-      primary: "text-primary",
-      secondary: "text-secondary",
+      withBackground: 'bg-gray-200 hover:bg-gray-300',
+      default: 'text-black',
+      primary: 'text-primary',
+      secondary: 'text-secondary',
     },
     size: {
-      sm: "p-2 text-sm",
-      md: "p-3 text-[14px] font-[600]",
-      lg: "p-4 text-lg",
+      sm: 'p-2 text-sm',
+      md: 'p-3 text-[14px] font-[600]',
+      lg: 'py-4 text-lg',
     },
   },
   defaultVariants: {
-    variant: "primary",
-    size: "md",
+    variant: 'primary',
+    size: 'md',
   },
 });
 
@@ -27,7 +27,7 @@ interface GoBackProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof goBackVariants> {
   onBack?: () => void;
-  text: string;
+  text?: string;
 }
 
 const GoBack: React.FC<GoBackProps> = ({

@@ -1,24 +1,24 @@
-import React, { useState } from "react";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { cva, type VariantProps } from "class-variance-authority";
+import React, { useState } from 'react';
+import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
+import { cva, type VariantProps } from 'class-variance-authority';
 
 const inputVariants = cva(
-  "flex h-[45px] w-full rounded-lg shadow-sm border px-3 py-2 placeholder:text-[12px] text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+  'flex h-[45px] w-full rounded-lg  px-3 py-2 placeholder:text-[12px] text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: "border-input",
-        focused: "border-input",
-        error: "border-destructive focus-visible:ring-border-destructive",
+        default: 'border-input',
+        focused: 'border-input',
+        error: 'border-destructive focus-visible:ring-border-destructive',
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: 'default',
     },
   }
 );
 interface PasswordInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">,
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>,
     VariantProps<typeof inputVariants> {
   label?: string;
   note?: string;
@@ -48,9 +48,9 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
         <div className="relative">
           <input
             {...props}
-            type={showPassword ? "text" : "password"}
+            type={showPassword ? 'text' : 'password'}
             className={inputVariants({
-              variant: error ? "error" : focus ? "focused" : "default",
+              variant: error ? 'error' : focus ? 'focused' : 'default',
               className,
             })}
             ref={ref}
@@ -62,7 +62,11 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground flex items-center justify-center bg-transparent rounded-[10px] border-none"
             onClick={handleTogglePassword}
           >
-            {showPassword ? <AiOutlineEyeInvisible color="#000000" /> : <AiOutlineEye color="#000000" />}
+            {showPassword ? (
+              <AiOutlineEyeInvisible color="#000000" />
+            ) : (
+              <AiOutlineEye color="#000000" />
+            )}
           </button>
         </div>
 
@@ -72,6 +76,6 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   }
 );
 
-PasswordInput.displayName = "PasswordInput";
+PasswordInput.displayName = 'PasswordInput';
 
 export { PasswordInput, inputVariants };

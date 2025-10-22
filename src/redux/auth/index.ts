@@ -73,6 +73,15 @@ export const authApi = createApi({
         body: verificationData,
       }),
     }),
+
+    // resend password reset token
+    resendPasswordResetToken: builder.mutation({
+      query: (email) => ({
+        url: '/api/v1/auth/resend-password-reset-otp',
+        method: 'POST',
+        body: { email },
+      }),
+    }),
     getUserToken: builder.mutation({
       query: (payload) => ({
         url: '/api/v1/users/regenerate-user-token',
@@ -202,6 +211,7 @@ export const {
   useCompleteProfileMutation,
   useVerifyEmailMutation,
   useForgotPasswordMutation,
+  useResendPasswordResetTokenMutation,
   useResetPasswordMutation,
   useChangePasswordMutation,
   useLogoutMutation,

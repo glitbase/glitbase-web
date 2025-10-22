@@ -1,22 +1,23 @@
-import { Button } from "@/components/Buttons";
-import Card from "@/components/Card";
-import { Input } from "@/components/Inputs/TextInput";
-import { Typography } from "@/components/Typography";
-import { useAppDispatch } from "@/hooks/redux-hooks";
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Button } from '@/components/Buttons';
+import Card from '@/components/Card';
+import { Input } from '@/components/Inputs/TextInput';
+import { Typography } from '@/components/Typography';
+import { useAppDispatch } from '@/hooks/redux-hooks';
 
-import { useForgotPasswordMutation } from "@/redux/auth";
-import { setNextpage } from "@/redux/auth/authSlice";
-import { handleError } from "@/utils/notify";
-import { validateFields } from "@/utils/validator";
-import { FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import passwordLock from '@/assets/images/passwordLock.svg'
-import { GoBack } from "@/components/GoBack";
+import { useForgotPasswordMutation } from '@/redux/auth';
+import { setNextpage } from '@/redux/auth/authSlice';
+import { handleError } from '@/utils/notify';
+import { validateFields } from '@/utils/validator';
+import { FormEvent, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { GoBack } from '@/components/GoBack';
 
 const ForgotPassword = () => {
   const dispatch = useAppDispatch();
   const [payload, setPayload] = useState({
-    email: "",
+    email: '',
   });
   const navigate = useNavigate();
   const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
@@ -24,7 +25,7 @@ const ForgotPassword = () => {
   const [touched, setTouched] = useState<any>([]);
 
   useEffect(() => {
-    let x = validateFields(["email"], payload);
+    let x = validateFields(['email'], payload);
 
     setErrors(x);
   }, [payload]);
@@ -42,19 +43,28 @@ const ForgotPassword = () => {
   return (
     <main className="lg:h-screen w-full flex justify-center lg:items-center">
       <Card
-        borderRadius={"lg"}
-        className="2xl:w-[604px] w-[504px] flex flex-col items-center mt-[14px] max-h-lg !shadow-none"
+        borderRadius={'lg'}
+        className="2xl:w-[604px] w-[504px] flex flex-col items-start mt-[14px] max-h-lg !shadow-none"
       >
-        <img src={passwordLock} className="w-[80px] mb-[2rem]" />
-        <div className="space-y-2 flex justify-center flex-col items-center">
-        <Typography variant="heading" className="text-center !text-[2rem] font-medium font-[lora]">
-        Forgot your password?
+        {/* back button */}
+        <GoBack
+          onBack={() => navigate('/auth/login')}
+          className="!text-[#344054]"
+          size={'lg'}
+        />
+        <div className="space-y-2 flex justify-start flex-col items-start">
+          <Typography
+            variant="heading"
+            className="text-left !text-[2rem] font-semibold font-[lora]"
+          >
+            Forgot your password?
           </Typography>
           <Typography
             variant="body"
-            className="text-[#344054] font-400 font-regular text-center text-[16px]"
+            className="text-[#344054] font-400 font-regular text-left text-[16px]"
           >
-            No worries, we will send you reset instructions
+            Enter your email associated with your account and we’ll send a reset
+            code to get back in
           </Typography>
         </div>
         <form className="w-full py-10 space-y-5">
@@ -62,10 +72,10 @@ const ForgotPassword = () => {
             <Input
               value={payload.email}
               onChange={(e) => {
-                setTouched([...touched, "email"]);
+                setTouched([...touched, 'email']);
                 setPayload({ ...payload, email: e.target.value });
               }}
-              error={touched.includes("email") && (errors?.errors?.email ?? "")}
+              error={touched.includes('email') && (errors?.errors?.email ?? '')}
               label="Email address"
               placeholder="Enter email address"
             />
@@ -73,16 +83,13 @@ const ForgotPassword = () => {
           <div className="mt-10">
             <Button
               variant="default"
-              size={"full"}
+              size={'full'}
               loading={isLoading}
               disabled={isLoading || !errors?.isValid}
               onClick={handleSubmit}
             >
-              Send reset instructions
+              Continue
             </Button>
-          </div>
-          <div className="mt-10 flex justify-center space-x-2">
-            <GoBack onBack={() => navigate('/auth/login')} text="Back to login" className="!text-[#344054]" />
           </div>
         </form>
       </Card>
