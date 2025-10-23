@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/redux-hooks';
 import { useEffect } from 'react';
 import Spiral from '@/assets/images/spiral.svg';
@@ -15,19 +15,26 @@ const AuthLayout = ({
 }) => {
   const navigate = useNavigate();
   const { isAuth, nextPage } = useAppSelector((state) => state.auth);
+  const location = useLocation();
 
   const [searchParams] = useSearchParams();
   const callbackUrl = searchParams.get('next') || '/';
 
   useEffect(() => {
+    const isAuthRoute = location.pathname.startsWith('/auth');
+    if (!isAuthRoute) {
+      return;
+    }
+
     if (nextPage) {
       navigate(nextPage);
+      return;
     }
 
     if (isAuth) {
       navigate(callbackUrl);
     }
-  }, [isAuth, nextPage]);
+  }, [isAuth, nextPage, navigate, callbackUrl, location.pathname]);
 
   return isLoading ? (
     <div className="rounded-xl overflow-hidden">

@@ -71,7 +71,9 @@ const ServiceModal = ({
         pricingType: service.pricingType || 'fixed',
         price: service.price?.toString() || '',
         currency: service.currency || 'NGN',
-        duration: service.durationInMinutes ? formatDurationFromMinutes(service.durationInMinutes) : '',
+        duration: service.durationInMinutes
+          ? formatDurationFromMinutes(service.durationInMinutes)
+          : '',
         maxBookingPerTimeSlot: service.maxBookingPerTimeSlot || 1,
         addOns: service.addOns || [],
       });
@@ -290,7 +292,6 @@ const ServiceModal = ({
   const serviceTypes = [
     { label: 'Normal service', value: 'normal' },
     { label: 'Home service', value: 'home' },
-    { label: 'Walk-in', value: 'walk-in' },
     { label: 'Drop-off & pick-up', value: 'drop-off' },
     { label: 'Virtual service', value: 'virtual' },
   ];
@@ -544,7 +545,9 @@ const ServiceModal = ({
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-left flex justify-between items-center bg-gray-50"
               >
                 <span
-                  className={formData.category ? 'text-gray-900' : 'text-gray-500'}
+                  className={
+                    formData.category ? 'text-gray-900' : 'text-gray-500'
+                  }
                 >
                   {formData.category || 'Category'}
                 </span>

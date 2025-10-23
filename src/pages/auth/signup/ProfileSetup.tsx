@@ -46,12 +46,15 @@ const ProfileSetup = () => {
   console.log('UserType from navigation state:', userTypeFromState);
 
   // Fetch user profile data if available (only if user is logged in)
+  const hasTokens = !!localStorage.getItem('tokens');
+
   const {
     data: profileData,
     isLoading,
     error,
   } = useUserProfileQuery(undefined, {
-    skip: !localStorage.getItem('token'),
+    skip: !hasTokens,
+    refetchOnMountOrArgChange: true,
   });
 
   console.log('Profile data:', profileData);

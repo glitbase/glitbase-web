@@ -4,6 +4,16 @@
 
 export const VENDOR_ONBOARDING_KEY = 'vendorOnboardingState';
 
+const dedupeSteps = (steps: OnboardingStep[]): OnboardingStep[] => {
+  return Array.from(new Set(steps.filter((step) => typeof step === 'number')));
+};
+
+const getDefaultState = (): VendorOnboardingState => ({
+  currentStep: OnboardingStep.PROFILE_SETUP,
+  completed: [],
+  data: {},
+});
+
 export enum OnboardingStep {
   PROFILE_SETUP = 1,
   STORE_SETUP = 3,
@@ -72,16 +82,30 @@ export interface VendorOnboardingState {
  */
 export const getOnboardingState = (): VendorOnboardingState => {
   const storedState = localStorage.getItem(VENDOR_ONBOARDING_KEY);
+
   if (storedState) {
-    return JSON.parse(storedState);
+    try {
+      const parsed = JSON.parse(storedState);
+
+      if (parsed && typeof parsed === 'object') {
+        return {
+          currentStep:
+            typeof parsed.currentStep === 'number'
+              ? parsed.currentStep
+              : OnboardingStep.PROFILE_SETUP,
+          completed: dedupeSteps(
+            Array.isArray(parsed.completed) ? parsed.completed : []
+          ),
+          data:
+            parsed.data && typeof parsed.data === 'object' ? parsed.data : {},
+        };
+      }
+    } catch {
+      localStorage.removeItem(VENDOR_ONBOARDING_KEY);
+    }
   }
 
-  // Default initial state
-  return {
-    currentStep: OnboardingStep.PROFILE_SETUP,
-    completed: [],
-    data: {},
-  };
+  return getDefaultState();
 };
 
 /**
@@ -100,6 +124,10 @@ export const updateOnboardingState = (
     },
   };
 
+  updatedState.completed = state.completed
+    ? dedupeSteps([...currentState.completed, ...state.completed])
+    : dedupeSteps(updatedState.completed);
+
   localStorage.setItem(VENDOR_ONBOARDING_KEY, JSON.stringify(updatedState));
   return updatedState;
 };
@@ -114,10 +142,7 @@ export const completeStep = (
   const currentState = getOnboardingState();
 
   // Add the completed step if not already in the list
-  const completed = [...currentState.completed];
-  if (!completed.includes(step)) {
-    completed.push(step);
-  }
+  const completed = dedupeSteps([...currentState.completed, step]);
 
   // Update the current step if provided
   const updatedState = {

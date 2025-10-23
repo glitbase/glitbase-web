@@ -1,5 +1,5 @@
-import ProtectedRouteProvider from "@/routes/ProtectedRouteProvider";
-import { useAppSelector } from "@/hooks/redux-hooks";
+import { useAppSelector } from '@/hooks/redux-hooks';
+import PageLoader from '@/PageLoader';
 
 const DashboardLayout = ({
   children,
@@ -9,14 +9,14 @@ const DashboardLayout = ({
   isLoading: boolean;
 }) => {
   const user = useAppSelector((state) => state.auth.user);
-  console.log(user);
 
-  console.log(user);
+  const shouldShowLoader = isLoading || !user;
 
-  return (
-    <ProtectedRouteProvider isLoading={isLoading}>
-      {children}
-    </ProtectedRouteProvider>
-  );
+  if (shouldShowLoader) {
+    return <PageLoader />;
+  }
+
+  return <>{children}</>;
 };
+
 export default DashboardLayout;

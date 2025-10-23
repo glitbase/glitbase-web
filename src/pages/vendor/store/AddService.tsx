@@ -254,7 +254,6 @@ const AddService = () => {
   const serviceTypes = [
     { label: 'Normal service', value: 'normal' },
     { label: 'Home service', value: 'home' },
-    { label: 'Walk-in', value: 'walk-in' },
     { label: 'Drop-off & pick-up', value: 'drop-off' },
   ];
 

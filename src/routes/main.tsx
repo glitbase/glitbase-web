@@ -42,15 +42,11 @@ const Dashhboard = () => {
   const isAuth = useAppSelector((state) => state.auth.isAuth);
 
   const [loadAccount, setLoadAccount] = useState(false);
-  const [hasToken, setHasToken] = useState(
-    !!(localStorage.getItem('tokens') || localStorage.getItem('token'))
-  );
+  const [hasToken, setHasToken] = useState(!!localStorage.getItem('tokens'));
 
   // Update hasToken when auth state changes
   useEffect(() => {
-    const tokenExists = !!(
-      localStorage.getItem('tokens') || localStorage.getItem('token')
-    );
+    const tokenExists = !!localStorage.getItem('tokens');
     setHasToken(tokenExists);
   }, [isAuth]);
 
@@ -61,34 +57,51 @@ const Dashhboard = () => {
     error,
   } = useUserProfileQuery(undefined, {
     skip: !hasToken, // Skip the query if there's no token
+    refetchOnMountOrArgChange: true,
   });
 
   useEffect(() => {
     if (reload) {
       refetch();
     }
-  }, [reload]);
+  }, [reload, refetch]);
+
   useEffect(() => {
     if (!loadAccount) {
       setLoadAccount(true);
-      // refresh();
     }
   }, [loadAccount]);
 
   useEffect(() => {
-    if (userProfile) {
-      if (userProfile.data.isEmailVerified) {
-        dispatch(setUser(userProfile));
-        amplitude.setUserId(userProfile.data.email);
-        dispatch(setReload(false));
-        dispatch(setEmail(userProfile.data.email));
-        dispatch(setArrayUserToken(userProfile.data.arrayUserToken));
-      } else {
-        dispatch(setUnauthenticated());
-        logoutUser();
-      }
+    if (!hasToken) {
+      return;
     }
-  }, [userProfile]);
+
+    if (!userProfile && userLoading) {
+      return;
+    }
+
+    const apiUser = userProfile?.data?.user;
+
+    if (!apiUser) {
+      return;
+    }
+
+    if (apiUser.isEmailVerified) {
+      dispatch(setUser(apiUser));
+      if (apiUser.email) {
+        amplitude.setUserId(apiUser.email);
+        dispatch(setEmail(apiUser.email));
+      }
+      if (apiUser.arrayUserToken) {
+        dispatch(setArrayUserToken(apiUser.arrayUserToken));
+      }
+      dispatch(setReload(false));
+    } else {
+      dispatch(setUnauthenticated());
+      logoutUser();
+    }
+  }, [userProfile, userLoading, dispatch, hasToken, refetch]);
 
   // Redirect to auth page if user is not authenticated and has no token
   useEffect(() => {

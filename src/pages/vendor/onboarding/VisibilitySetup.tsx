@@ -96,7 +96,7 @@ const VisibilitySetup = () => {
         <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
           <div className="w-full mb-6">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/vendor/onboarding/categories')}
               className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
             >
               <svg

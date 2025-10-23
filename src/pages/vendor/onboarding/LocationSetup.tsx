@@ -112,11 +112,11 @@ const LocationSetup = () => {
 
   return (
     <AuthLayout isLoading={false}>
-      <VendorOnboardingLayout progress={100} currentStep={6}>
+      <VendorOnboardingLayout progress={65} currentStep={6}>
         <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
           <div className="w-full mb-6">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/vendor/onboarding/visibility')}
               className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
             >
               <svg

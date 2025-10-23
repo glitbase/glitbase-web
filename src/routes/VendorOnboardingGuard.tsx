@@ -1,12 +1,14 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/redux-hooks';
 import {
   getOnboardingState,
   getStepRoute,
   OnboardingStep,
+  updateOnboardingState,
 } from '@/utils/vendorOnboarding';
-import { useState, useEffect } from 'react';
 import PageLoader from '@/PageLoader';
+import { useUserProfileQuery } from '@/redux/auth';
 
 interface VendorOnboardingGuardProps {
   children: React.ReactNode;
@@ -20,6 +22,13 @@ const VendorOnboardingGuard = ({ children }: VendorOnboardingGuardProps) => {
   const user = useAppSelector((state) => state.auth.user);
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
+  const hasToken = useMemo(() => !!localStorage.getItem('tokens'), []);
+
+  const { data: profileResponse, isFetching: isProfileFetching } =
+    useUserProfileQuery(undefined, {
+      skip: !hasToken,
+      refetchOnMountOrArgChange: true,
+    });
 
   console.log('VendorOnboardingGuard - Current location:', location.pathname);
   console.log('VendorOnboardingGuard - User:', user);
@@ -42,6 +51,17 @@ const VendorOnboardingGuard = ({ children }: VendorOnboardingGuardProps) => {
     return <>{children}</>;
   }
 
+  // Check if user is already on a vendor onboarding route
+  const isOnOnboardingRoute =
+    location.pathname.startsWith('/vendor/onboarding');
+
+  const shouldShowLoader = isChecking || isProfileFetching;
+
+  if (shouldShowLoader) {
+    console.log('VendorOnboardingGuard - Showing loader during check');
+    return <PageLoader />;
+  }
+
   // If vendor onboarding is already completed, render children
   if (user.vendorOnboardingStatus === 'completed') {
     console.log(
@@ -50,17 +70,11 @@ const VendorOnboardingGuard = ({ children }: VendorOnboardingGuardProps) => {
     return <>{children}</>;
   }
 
-  // Check if user is already on a vendor onboarding route or profile setup
-  const isOnOnboardingRoute =
-    location.pathname.startsWith('/vendor/onboarding') ||
-    location.pathname.startsWith('/auth/signup/profile');
-
   console.log(
     'VendorOnboardingGuard - Is on onboarding route:',
     isOnOnboardingRoute
   );
 
-  // If already on an onboarding route, let them stay there
   if (isOnOnboardingRoute) {
     console.log(
       'VendorOnboardingGuard - Already on onboarding route, rendering children'
@@ -68,9 +82,43 @@ const VendorOnboardingGuard = ({ children }: VendorOnboardingGuardProps) => {
     return <>{children}</>;
   }
 
-  // Check localStorage for the current onboarding step
-  const onboardingState = getOnboardingState();
+  let onboardingState = getOnboardingState();
   console.log('VendorOnboardingGuard - Onboarding state:', onboardingState);
+
+  const serverUser = profileResponse?.data?.user;
+
+  if (serverUser?.vendorOnboardingStatus === 'completed') {
+    console.log('VendorOnboardingGuard - Server reports onboarding completed');
+    return <>{children}</>;
+  }
+
+  const serverHasProfileDetails = Boolean(
+    serverUser?.firstName &&
+      serverUser?.lastName &&
+      serverUser?.phoneNumber &&
+      serverUser?.countryCode &&
+      serverUser?.countryName
+  );
+
+  const needsProfileSync =
+    serverHasProfileDetails &&
+    (!onboardingState.completed.includes(OnboardingStep.PROFILE_SETUP) ||
+      onboardingState.currentStep === OnboardingStep.PROFILE_SETUP);
+
+  if (needsProfileSync && serverUser) {
+    onboardingState = updateOnboardingState({
+      currentStep: OnboardingStep.STORE_SETUP,
+      completed: [OnboardingStep.PROFILE_SETUP],
+      data: {
+        firstName: serverUser.firstName,
+        lastName: serverUser.lastName,
+        email: serverUser.email,
+        phoneNumber: serverUser.phoneNumber,
+        countryCode: serverUser.countryCode,
+        countryName: serverUser.countryName,
+      },
+    });
+  }
 
   // If localStorage has been cleared (no currentStep and no completed steps),
   // it means onboarding is complete, so render children
@@ -83,12 +131,6 @@ const VendorOnboardingGuard = ({ children }: VendorOnboardingGuardProps) => {
       'VendorOnboardingGuard - localStorage cleared, assuming onboarding complete'
     );
     return <>{children}</>;
-  }
-
-  // Show loader while checking to prevent flash of dashboard
-  if (isChecking) {
-    console.log('VendorOnboardingGuard - Showing loader during check');
-    return <PageLoader />;
   }
 
   // If there's a current step saved, redirect to that step

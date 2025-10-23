@@ -77,7 +77,7 @@ const CategoriesSetup = () => {
 
   return (
     <AuthLayout isLoading={false}>
-      <VendorOnboardingLayout progress={66} currentStep={4}>
+      <VendorOnboardingLayout progress={50} currentStep={4}>
         <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
           <div className="space-y-2 flex flex-col items-start w-full">
             <Typography
