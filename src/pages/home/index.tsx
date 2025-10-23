@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAppSelector } from '@/hooks/redux-hooks';
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import HomeLayout from '@/layout/home/HomeLayout';
 import {
   useFetchMarketplaceQuery,
@@ -22,6 +23,7 @@ const Home = () => {
   const [isLoading] = useState<boolean>(false);
   const user = useAppSelector((state) => state.auth.user);
   const { showModal } = useModal();
+  const navigate = useNavigate();
 
   // Fetch marketplace data
   const {
@@ -126,8 +128,13 @@ const Home = () => {
   }, [marketplaceData]);
 
   const handleSearch = (value: string) => {
-    // Handle search logic here
-    console.log('Search:', value);
+    if (value.trim()) {
+      navigate(`/search?q=${encodeURIComponent(value)}`);
+    }
+  };
+
+  const handleCategoryClick = (categoryName: string) => {
+    navigate(`/search?q=${encodeURIComponent(categoryName)}`);
   };
 
   const handleLocationChange = () => {
@@ -331,7 +338,11 @@ const Home = () => {
                 : categoriesData?.categories
                     ?.slice(0, 8)
                     .map((category: any) => (
-                      <CategoryCard key={category.id} item={category} />
+                      <CategoryCard
+                        key={category.id}
+                        item={category}
+                        onClick={() => handleCategoryClick(category.name)}
+                      />
                     ))}
             </div>
           </div>

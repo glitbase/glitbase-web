@@ -5,11 +5,15 @@ type CategoryCardProps = {
 
 interface CategoryCardProp {
   item: CategoryCardProps;
+  onClick?: () => void;
 }
 
-const CategoryCard = ({ item }: CategoryCardProp) => {
+const CategoryCard = ({ item, onClick }: CategoryCardProp) => {
   return (
-    <div className="relative overflow-hidden rounded-2xl h-[172px] cursor-pointer hover:opacity-90 transition-opacity">
+    <div
+      onClick={onClick}
+      className="relative overflow-hidden rounded-2xl h-[172px] cursor-pointer hover:opacity-90 transition-opacity"
+    >
       <img
         src={
           item?.imageUrl ||
