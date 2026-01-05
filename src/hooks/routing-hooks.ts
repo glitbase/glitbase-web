@@ -1,5 +1,11 @@
-import { useCallback } from "react";
-import { useBeforeUnload } from "react-router-dom";
+/**
+ * Routing Hooks
+ * 
+ * This file previously contained localStorage-based temporary storage.
+ * That functionality has been removed as part of the auth/routing overhaul.
+ * 
+ * Use React Router's state or Redux for passing data between routes.
+ */
 
 export function debounce<T>(
   callback: (...args: T[]) => void,
@@ -15,31 +21,14 @@ export function debounce<T>(
   };
 }
 
-export const useTmpStorage = (storableStore?: any) => {
-  const storeData = (data: any) => {
-    if (data) {
-      let tmpDataStr = localStorage.getItem("tmpData");
-      let tmpData = tmpDataStr ? JSON.parse(tmpDataStr) : {};
-      tmpData = JSON.stringify({ ...tmpData, ...data });
-      localStorage.setItem("tmpData", tmpData);
-    }
+/**
+ * @deprecated Use React Router's state or Redux instead of localStorage
+ */
+export const useTmpStorage = () => {
+  console.warn('useTmpStorage is deprecated. Use React Router state or Redux instead.');
+  
+  return { 
+    getData: () => null, 
+    setData: () => {} 
   };
-
-  useBeforeUnload(
-    useCallback(() => {
-      storeData(storableStore);
-    }, [storableStore])
-  );
-
-  const getData = (key: string) => {
-    let tmpDataStr = localStorage.getItem("tmpData");
-    let tmpData = tmpDataStr ? JSON.parse(tmpDataStr) : {};
-    return tmpData[key];
-  };
-
-  const setData = (data: any) => {
-    storeData(data);
-  };
-
-  return { getData, setData };
 };

@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/redux-hooks';
 import { useEffect } from 'react';
 import Spiral from '@/assets/images/spiral.svg';
@@ -17,24 +17,50 @@ const AuthLayout = ({
   const { isAuth, nextPage } = useAppSelector((state) => state.auth);
   const location = useLocation();
 
-  const [searchParams] = useSearchParams();
-  const callbackUrl = searchParams.get('next') || '/';
-
   useEffect(() => {
+    console.log('🔐 AuthLayout: useEffect running', {
+      isAuth,
+      nextPage,
+      pathname: location.pathname,
+      isAuthRoute: location.pathname.startsWith('/auth')
+    });
+
     const isAuthRoute = location.pathname.startsWith('/auth');
     if (!isAuthRoute) {
       return;
     }
 
     if (nextPage) {
+      console.log('🔐 AuthLayout: Navigating to nextPage', { nextPage, from: location.pathname });
       navigate(nextPage);
       return;
     }
 
-    if (isAuth) {
-      navigate(callbackUrl);
+    // Define routes where authenticated users are allowed
+    // (onboarding routes need to be accessible after auto-login)
+    const allowedRoutesForAuthenticatedUsers = [
+      '/auth/signup/profile',      // Profile setup after OTP
+      '/auth/signup/interests',    // Interests selection for customers
+      '/auth/signup/verify',       // OTP verification in progress
+      '/auth/forgot-password',     // Password reset flow
+    ];
+
+    // Check if current route is allowed for authenticated users
+    const isAllowedRoute = allowedRoutesForAuthenticatedUsers.some(route =>
+      location.pathname.startsWith(route)
+    );
+
+    // Redirect authenticated users away from entry point auth pages ONLY
+    // (login, signup start), but allow onboarding routes
+    if (isAuth && !isAllowedRoute) {
+      console.log('🔐 AuthLayout: Redirecting authenticated user to /', {
+        isAuth,
+        pathname: location.pathname,
+        isAllowedRoute
+      });
+      navigate('/');
     }
-  }, [isAuth, nextPage, navigate, callbackUrl, location.pathname]);
+  }, [isAuth, nextPage, navigate, location.pathname]);
 
   return isLoading ? (
     <div className="rounded-xl overflow-hidden">

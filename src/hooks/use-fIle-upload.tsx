@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useAuth } from '@/AuthContext';
 import { useUpdateUserMutation } from '@/redux/auth';
 import { handleError } from '@/utils/notify';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import { useAppSelector } from '@/hooks/redux-hooks';
+import { selectTokens } from '@/redux/auth/authSlice';
 
 const useFileUpload = () => {
   const [updateUser, { isLoading: updateUserLoading }] =
     useUpdateUserMutation();
-  const { tokens } = useAuth();
+  const tokens = useAppSelector(selectTokens);
 
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,7 @@ const useFileUpload = () => {
         {
           method: 'POST',
           body: formData,
-          headers: { Authorization: `Bearer ${tokens.accessToken}` },
+          headers: { Authorization: `Bearer ${tokens?.accessToken}` },
         }
       );
 

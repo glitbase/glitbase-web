@@ -21,19 +21,14 @@ import {
   useLoginMutation,
   useUserProfileQuery,
 } from '@/redux/auth';
-import { useAuth } from '@/AuthContext';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux-hooks';
+import { setTokens, selectHasTokens } from '@/redux/auth/authSlice';
 import { toast } from 'react-toastify';
-import {
-  OnboardingStep,
-  updateOnboardingState,
-  completeStep,
-  getOnboardingState,
-} from '@/utils/vendorOnboarding';
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setTokens } = useAuth();
+  const dispatch = useAppDispatch();
 
   // Get email and userType from navigation state (passed from OTP verification)
   const emailFromState = location.state?.email as string | undefined;
@@ -46,7 +41,7 @@ const ProfileSetup = () => {
   console.log('UserType from navigation state:', userTypeFromState);
 
   // Fetch user profile data if available (only if user is logged in)
-  const hasTokens = !!localStorage.getItem('tokens');
+  const hasTokens = useAppSelector(selectHasTokens);
 
   const {
     data: profileData,
@@ -61,124 +56,56 @@ const ProfileSetup = () => {
   console.log('Loading state:', isLoading);
   console.log('Error state:', error);
 
-  // Load data from localStorage if available
-  const savedState = getOnboardingState();
-  console.log('Saved onboarding state:', savedState);
-
-  // Priority: API data > localStorage > navigation state
-  const email =
-    profileData?.data?.user?.email || savedState.data.email || emailFromState;
+  // Priority: API data > navigation state
+  const email = profileData?.data?.user?.email || emailFromState || '';
   const userType = (profileData?.data?.user?.activeRole ||
     userTypeFromState ||
     'vendor') as 'customer' | 'vendor';
 
-  // Check if user already has complete profile data to skip this step
+  // State to track if we should skip this step (if profile is already completed)
+  const [shouldSkipToNextStep, setShouldSkipToNextStep] = useState(false);
+
+  // SINGLE navigation check: If profile is already complete, redirect immediately
   useEffect(() => {
-    console.log('Auto-navigation effect running');
+    // Skip if already in skip mode
+    if (shouldSkipToNextStep) return;
 
-    if (!profileData) {
-      console.log('No profile data yet');
-      return;
-    }
-
-    if (!profileData.data?.user) {
-      console.log('No user data in profile response');
-      return;
-    }
+    // Only check if we have profile data loaded
+    if (!hasTokens || !profileData?.data?.user) return;
 
     const user = profileData.data.user;
-    console.log('User data for navigation check:', user);
 
-    // Check if user has all required fields
-    const hasRequiredFields =
+    // Check if profile is complete
+    const isProfileComplete =
       user.firstName &&
       user.lastName &&
       user.phoneNumber &&
       user.countryCode &&
-      user.countryName &&
-      userType === 'vendor';
+      user.countryName;
 
-    console.log('Has all required fields:', hasRequiredFields);
-    console.log('User type:', userType);
-
-    if (hasRequiredFields) {
-      console.log('All conditions met, preparing to navigate');
-
-      // Save data to localStorage first
-      updateOnboardingState({
-        currentStep: OnboardingStep.STORE_SETUP,
-        data: {
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          countryCode: user.countryCode,
-          countryName: user.countryName,
-        },
-      });
-      console.log('Onboarding state updated');
-
-      // Mark profile setup as completed
-      completeStep(OnboardingStep.PROFILE_SETUP, OnboardingStep.STORE_SETUP);
-      console.log('Step marked as completed');
-
-      // Navigate to store setup (stage 3)
-      console.log('Navigating to /vendor/onboarding');
-      navigate('/vendor/onboarding');
-    } else {
-      console.log('Missing required fields, not navigating');
-      if (!user.firstName) console.log('Missing firstName');
-      if (!user.lastName) console.log('Missing lastName');
-      if (!user.phoneNumber) console.log('Missing phoneNumber');
-      if (!user.countryCode) console.log('Missing countryCode');
-      if (!user.countryName) console.log('Missing countryName');
-      if (userType !== 'vendor') console.log('User is not a vendor');
-    }
-  }, [profileData, navigate, userType]);
-
-  // State to track if we should skip this step
-  const [shouldSkipToNextStep, setShouldSkipToNextStep] = useState(false);
-
-  // Check if we already have completed profile setup in localStorage
-  useEffect(() => {
-    console.log('Checking localStorage for completed profile setup');
-
-    // Get fresh state from localStorage
-    const currentState = getOnboardingState();
-
-    // If we already have completed profile setup and have the necessary data
-    const hasCompletedProfile = currentState.completed.includes(
-      OnboardingStep.PROFILE_SETUP
-    );
-    const hasRequiredData =
-      currentState.data.firstName &&
-      currentState.data.lastName &&
-      currentState.data.phoneNumber &&
-      currentState.data.countryCode &&
-      currentState.data.countryName;
-
-    console.log('Has completed profile:', hasCompletedProfile);
-    console.log('Has required data:', hasRequiredData);
-
-    if (hasCompletedProfile && hasRequiredData) {
-      console.log('Profile setup already completed according to localStorage');
-      console.log('Setting shouldSkipToNextStep to true');
+    if (isProfileComplete) {
+      console.log('Profile already complete, redirecting...');
       setShouldSkipToNextStep(true);
 
-      // Navigate after a small delay to ensure state is updated
-      setTimeout(() => {
-        console.log('Navigating to vendor onboarding');
+      // Navigate based on role (no localStorage needed)
+      if (user.activeRole === 'customer') {
+        navigate('/auth/signup/interests', { replace: true });
+      } else {
         navigate('/vendor/onboarding', { replace: true });
-      }, 100);
+      }
     }
-  }, [navigate]); // Only depend on navigate
+  }, [hasTokens, profileData, shouldSkipToNextStep, navigate]);
 
-  // Initialize form with saved data if available
+  // Initialize form state
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errors, setErrors] = useState<any>({});
+  const [touched, setTouched] = useState<string[]>([]);
 
-  // Prefill form data from API response or localStorage
+  // Prefill form data from API response
   useEffect(() => {
     if (profileData?.data?.user) {
       const user = profileData.data.user;
@@ -186,22 +113,11 @@ const ProfileSetup = () => {
       // Prefill name if available from API
       if (user.firstName && user.lastName) {
         setFullName(`${user.firstName} ${user.lastName}`);
-      } else if (savedState.data.firstName && savedState.data.lastName) {
-        setFullName(`${savedState.data.firstName} ${savedState.data.lastName}`);
       }
 
       // Prefill phone number if available from API
       if (user.phoneNumber) {
-        // Extract only the digits after the country code
-        // For Nigerian numbers (+234), we need to keep the "90" prefix
         const phoneWithoutCountryCode = user.phoneNumber.replace(
-          /^\+(\d{1,3})/,
-          ''
-        );
-        setPhoneNumber(phoneWithoutCountryCode);
-      } else if (savedState.data.phoneNumber) {
-        // Extract only the digits after the country code
-        const phoneWithoutCountryCode = savedState.data.phoneNumber.replace(
           /^\+(\d{1,3})/,
           ''
         );
@@ -212,40 +128,9 @@ const ProfileSetup = () => {
       if (user.countryCode) {
         const country = countries.find((c) => c.code === user.countryCode);
         if (country) setSelectedCountry(country);
-      } else if (savedState.data.countryCode) {
-        const country = countries.find(
-          (c) => c.code === savedState.data.countryCode
-        );
-        if (country) setSelectedCountry(country);
-      }
-    } else {
-      // If no API data, use localStorage data
-      if (savedState.data.firstName && savedState.data.lastName) {
-        setFullName(`${savedState.data.firstName} ${savedState.data.lastName}`);
-      }
-
-      if (savedState.data.phoneNumber) {
-        // Extract only the digits after the country code
-        const phoneWithoutCountryCode = savedState.data.phoneNumber.replace(
-          /^\+(\d{1,3})/,
-          ''
-        );
-        setPhoneNumber(phoneWithoutCountryCode);
-      }
-
-      if (savedState.data.countryCode) {
-        const country = countries.find(
-          (c) => c.code === savedState.data.countryCode
-        );
-        if (country) setSelectedCountry(country);
       }
     }
-  }, [profileData, savedState.data]);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  const [errors, setErrors] = useState<any>({});
-  const [touched, setTouched] = useState<string[]>([]);
+  }, [profileData]);
 
   const [completeProfile, { isLoading: isCompletingProfile }] =
     useCompleteProfileMutation();
@@ -310,39 +195,19 @@ const ProfileSetup = () => {
   };
 
   const navigateAfterProfileSetup = (user: any) => {
-    localStorage.setItem('isFirstTimeUser', 'true');
-
     if (user.activeRole === 'customer') {
-      navigate('/auth/signup/interests');
+      // Navigate to interests selection for customers
+      navigate('/auth/signup/interests', { replace: true });
     } else {
-      // Vendor flow
+      // Vendor flow - navigate based on onboarding status
       if (user.vendorOnboardingStatus !== 'completed') {
-        // Save profile data to localStorage
-        const nameParts = fullName.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
-        updateOnboardingState({
-          currentStep: OnboardingStep.STORE_SETUP,
-          data: {
-            firstName,
-            lastName,
-            email,
-            phoneNumber: `${selectedCountry.dialCode}${phoneNumber}`,
-            countryCode: selectedCountry.code,
-            countryName: selectedCountry.name,
-          },
-        });
-
-        completeStep(OnboardingStep.PROFILE_SETUP, OnboardingStep.STORE_SETUP);
-
-        navigate('/vendor/onboarding');
+        navigate('/vendor/onboarding', { replace: true });
       } else if (!user.hasPayoutInfo) {
-        navigate('/vendor/payout-setup');
+        navigate('/vendor/payout-setup', { replace: true });
       } else if (!user.hasSubInfo) {
-        navigate('/vendor/subscription-setup');
+        navigate('/vendor/subscription-setup', { replace: true });
       } else {
-        navigate('/');
+        navigate('/', { replace: true });
       }
     }
   };
@@ -377,7 +242,7 @@ const ProfileSetup = () => {
           password,
         }).unwrap();
 
-        setTokens(loginResponse.tokens);
+        dispatch(setTokens(loginResponse.tokens));
 
         // Navigate based on role
         navigateAfterProfileSetup(loginResponse.user);
@@ -393,7 +258,6 @@ const ProfileSetup = () => {
       );
     }
   };
-  console.log(userType);
 
   // If we're skipping to the next step, show loading
   if (shouldSkipToNextStep) {
@@ -410,30 +274,12 @@ const ProfileSetup = () => {
     );
   }
 
-  // Check if we have enough data to render the form
-  const canRenderForm = !isLoading && (email || savedState.data.email);
-  console.log('Can render form:', canRenderForm);
-  console.log('Email from API:', email);
-  console.log('Email from localStorage:', savedState.data.email);
-
   return (
     <main className="h-screen w-full !bg-[white] overflow-y-auto">
       {isLoading ? (
         <div className="flex flex-col justify-center items-center h-full">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CC5A88]"></div>
           <p className="mt-3 text-gray-600">Loading profile data...</p>
-        </div>
-      ) : !canRenderForm ? (
-        <div className="flex flex-col justify-center items-center h-full">
-          <p className="text-gray-600">
-            Unable to load profile data. Please try again.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#60983C] text-white rounded hover:bg-[#4d7a30]"
-          >
-            Refresh Page
-          </button>
         </div>
       ) : (
         <>

@@ -1,4 +1,3 @@
-import { useAuth } from "@/AuthContext";
 import { Button } from "@/components/Buttons";
 import { GoBack } from "@/components/GoBack";
 import ProtectedRouteProvider from "@/routes/ProtectedRouteProvider";
@@ -10,13 +9,12 @@ import { handleError } from "@/utils/notify";
 import { FormEvent, useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import Logo from "@/assets/images/logo.svg";
-import { setUser, setAuthenticated } from "@/redux/auth/authSlice";
+import { setUser, setAuthenticated, setTokens } from "@/redux/auth/authSlice";
 import "./index.css";
 import PageLoader from "@/PageLoader";
 
 const AddRole = () => {
   const dispatch = useAppDispatch();
-  const { setTokens } = useAuth();
   const [updateUser, { isLoading }] = useUpdateUserMutation();
   const user = useAppSelector((state) => state.auth.user);
   const { data, isFetching, isError } = useUserProfileQuery(undefined, {
@@ -53,7 +51,7 @@ const AddRole = () => {
     try {
       const data = await updateUser({ role: selectedRole }).unwrap();
       trackAction("User Role Update", { role: selectedRole });
-      setTokens(data.tokens);
+      dispatch(setTokens(data.tokens));
       toast.success("Role successfully added!");
       window.location.href = '/'
     } catch (error: any) {

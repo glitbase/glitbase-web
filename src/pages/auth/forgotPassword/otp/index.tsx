@@ -44,13 +44,13 @@ const ForgotOtp = () => {
       try {
         await validateOtp({ email, otp: otpValue }).unwrap();
         dispatch(setNextpage(`/auth/reset-password`));
-        localStorage.setItem(
-          'otp',
-          JSON.stringify({
+        // Navigate with state instead of localStorage
+        navigate('/auth/reset-password', {
+          state: {
             email,
             otp: otpValue,
-          })
-        );
+          },
+        });
       } catch (error: any) {
         handleError(error?.data);
       }

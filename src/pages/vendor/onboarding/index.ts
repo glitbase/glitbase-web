@@ -4,4 +4,6 @@ export { default as VisibilitySetup } from './VisibilitySetup';
 export { default as LocationSetup } from './LocationSetup';
 export { default as PayoutSetup } from './PayoutSetup';
 export { default as SubscriptionSetup } from './SubscriptionSetup';
+export { default as CheckoutPage } from './CheckoutPage';
+export { default as CheckoutSuccess } from './CheckoutSuccess';
 export { default as VendorOnboardingLayout } from './VendorOnboardingLayout';

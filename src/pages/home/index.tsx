@@ -142,6 +142,9 @@ const Home = () => {
     refetchMarketplace();
   };
 
+  // NOTE: Vendor onboarding redirects are now handled by VendorOnboardingGuard
+  // on the /vendor/* routes. Homepage is accessible to all users.
+
   return (
     <HomeLayout
       isLoading={isLoading}
@@ -156,7 +159,7 @@ const Home = () => {
           {/* Greeting Section */}
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-[40px] font-normal text-[#1D2739] font-[lora]">
-              Hello, {user?.firstName || 'User'} 👋
+              Hello{user?.firstName ? `, ${user.firstName}` : ''} 👋
             </h1>
             <button className="flex items-center gap-2 px-6 py-3  rounded-lg hover:bg-gray-50 transition-colors bg-[#FAFAFA]">
               <svg

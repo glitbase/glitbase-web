@@ -1,25 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, KeyboardEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/Buttons';
 import { Typography } from '@/components/Typography';
 import VendorOnboardingLayout from './VendorOnboardingLayout';
 import { toast } from 'react-toastify';
 import AuthLayout from '@/layout/auth';
-import {
-  getOnboardingState,
-  updateOnboardingState,
-  completeStep,
-  OnboardingStep,
-} from '@/utils/vendorOnboarding';
 import { Input } from '@/components/Inputs/TextInput';
 
 const VisibilitySetup = () => {
   const navigate = useNavigate();
-
-  // Load saved data from localStorage
-  const savedState = getOnboardingState();
-  const [tags, setTags] = useState<string[]>(savedState.data.tags || []);
+  const location = useLocation();
+  
+  // Get data passed from previous step via navigation state
+  const storeData = location.state?.storeData || {};
+  
+  const [tags, setTags] = useState<string[]>(storeData.tags || []);
   const [inputValue, setInputValue] = useState('');
 
   const MAX_TAGS = 5;
@@ -62,32 +58,15 @@ const VisibilitySetup = () => {
       return;
     }
 
-    // Save to localStorage for persistence
-    updateOnboardingState({
-      data: {
-        tags: tags,
+    // Pass data to next step via navigation state
+    navigate('/vendor/onboarding/location', {
+      state: {
+        storeData: {
+          ...storeData,
+          tags: tags,
+        },
       },
     });
-
-    // Mark step as completed and set next step
-    completeStep(
-      OnboardingStep.VISIBILITY_SETUP,
-      OnboardingStep.LOCATION_SETUP
-    );
-
-    // Get existing store data and add tags (for backward compatibility)
-    const existingData = JSON.parse(
-      sessionStorage.getItem('vendorStoreData') || '{}'
-    );
-    const updatedData = {
-      ...existingData,
-      tags: tags,
-    };
-
-    sessionStorage.setItem('vendorStoreData', JSON.stringify(updatedData));
-
-    // Navigate to location setup
-    navigate('/vendor/onboarding/location');
   };
 
   return (
@@ -96,7 +75,9 @@ const VisibilitySetup = () => {
         <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
           <div className="w-full mb-6">
             <button
-              onClick={() => navigate('/vendor/onboarding/categories')}
+              onClick={() => navigate('/vendor/onboarding/categories', {
+                state: { storeData }
+              })}
               className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
             >
               <svg

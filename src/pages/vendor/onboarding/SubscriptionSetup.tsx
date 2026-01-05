@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Buttons';
 import { Typography } from '@/components/Typography';
@@ -7,18 +7,12 @@ import VendorOnboardingLayout from './VendorOnboardingLayout';
 import {
   useGetActiveSubscriptionPlansQuery,
   useAcceptSubscriptionMutation,
+  useCreateSubscriptionMutation,
 } from '@/redux/vendor';
 import { useAppSelector, useAppDispatch } from '@/hooks/redux-hooks';
 import { toast } from 'react-toastify';
 import { useUserProfileQuery } from '@/redux/auth';
 import { setReload } from '@/redux/auth/authSlice';
-import {
-  getOnboardingState,
-  updateOnboardingState,
-  completeStep,
-  OnboardingStep,
-  clearOnboardingState,
-} from '@/utils/vendorOnboarding';
 import AuthLayout from '@/layout/auth';
 import success from '@/assets/images/success.png';
 
@@ -28,31 +22,62 @@ const SubscriptionSetup = () => {
   const user = useAppSelector((state) => state.auth.user);
   const country = user?.countryCode || 'NG';
 
-  // Load saved data from localStorage
-  const savedState = getOnboardingState();
-  const [selectedPlan, setSelectedPlan] = useState<any>(
-    savedState.data.subscriptionType && savedState.data.planId
-      ? { type: savedState.data.subscriptionType, _id: savedState.data.planId }
-      : null
-  );
+  // Form state - no localStorage needed
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const { data: plans, isLoading } =
     useGetActiveSubscriptionPlansQuery(undefined);
   const [acceptSubscription, { isLoading: isAccepting }] =
     useAcceptSubscriptionMutation();
+  const [createSubscription, { isLoading: isCreatingSubscription }] =
+    useCreateSubscriptionMutation();
   const { refetch: refetchProfile } = useUserProfileQuery(undefined, {});
 
   const isNigeria = country === 'NG';
-  const monthlyPlan = plans?.data?.find((p: any) => p.type === 'monthly');
-  const yearlyPlan = plans?.data?.find((p: any) => p.type === 'yearly');
+
+  // The API returns plans directly (already transformed by RTK Query)
+  const plansArray = useMemo(() => {
+    return Array.isArray(plans) ? plans : [];
+  }, [plans]);
+
+  const monthlyPlan = useMemo(() => {
+    return plansArray.find((p: any) => p.type === 'monthly');
+  }, [plansArray]);
+
+  const yearlyPlan = useMemo(() => {
+    return plansArray.find((p: any) => p.type === 'yearly');
+  }, [plansArray]);
+
+  // Debug logging
+  console.log('SubscriptionSetup Debug:', {
+    country,
+    isNigeria,
+    plansRaw: plans,
+    plansArray,
+    monthlyPlan,
+    yearlyPlan,
+    selectedPlan,
+    isLoading,
+  });
 
   useEffect(() => {
     if (isNigeria) {
       // For Nigeria, auto-select commission plan
       setSelectedPlan({ type: 'commission' });
+    } else if (plansArray.length > 0 && !selectedPlan) {
+      // For UK, auto-select monthly plan on load
+      const monthly = plansArray.find(
+        (p: any) => p.type.toLowerCase() === 'monthly'
+      );
+      if (monthly) {
+        setSelectedPlan(monthly);
+      }
     }
-  }, [isNigeria]);
+    // We intentionally omit `selectedPlan` from dependencies to avoid
+    // re-running when the user manually changes their selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNigeria, plansArray]);
 
   const formatPrice = (price: number, currency: string) => {
     const formattedPrice = (price / 100).toFixed(2);
@@ -60,62 +85,100 @@ const SubscriptionSetup = () => {
     return `${symbol}${formattedPrice}`;
   };
 
+  const handleSubscriptionSuccess = async () => {
+    try {
+      // Refetch user profile
+      console.log('Refetching user profile after subscription...');
+      await refetchProfile();
+
+      // Trigger Redux reload
+      dispatch(setReload(true));
+
+      // Show success modal
+      setShowSuccessModal(true);
+    } catch (error: any) {
+      console.error('Error completing subscription:', error);
+      toast.error('Subscription created but profile update failed');
+    }
+  };
+
+
   const handleStartTrial = async () => {
     try {
       let payload: any;
-      let subscriptionData: any = {};
 
       if (isNigeria) {
         // Commission-based for Nigeria
         payload = {
           subscriptionType: 'commission',
         };
-        subscriptionData = { subscriptionType: 'commission' };
+
+        await acceptSubscription(payload).unwrap();
+
+        // Refetch user profile to get updated vendorOnboardingStatus
+        console.log('Refetching user profile after subscription...');
+        await refetchProfile();
+
+        // Trigger Redux reload to update user state
+        dispatch(setReload(true));
+
+        // Show success modal
+        setShowSuccessModal(true);
       } else {
-        // Monthly/Yearly for UK
+        // UK - Monthly/Yearly with Stripe
         if (!selectedPlan) {
           toast.error('Please select a plan');
           return;
         }
 
+        // Prepare subscription payload
         payload = {
           subscriptionType: selectedPlan.type,
           planId: selectedPlan._id,
-          // paymentMethodId would come from a payment provider integration
-          paymentMethodId: 'placeholder',
         };
 
-        subscriptionData = {
-          subscriptionType: selectedPlan.type,
-          planId: selectedPlan._id,
-        };
+        // Create subscription (backend will handle Stripe)
+        const result = await createSubscription(payload).unwrap();
+
+        console.log('Subscription result:', result);
+
+        if (result.status) {
+          // Handle 3D Secure if clientSecret is provided
+          if (result.data?.clientSecret) {
+            console.log('Client secret received:', result.data.clientSecret);
+
+            // Check if it's a setup intent or payment intent
+            const isSetupIntent = result.data.clientSecret.startsWith('seti_');
+            const isPaymentIntent = result.data.clientSecret.startsWith('pi_');
+
+            console.log(
+              'Client secret type:',
+              isSetupIntent
+                ? 'Setup Intent'
+                : isPaymentIntent
+                  ? 'Payment Intent'
+                  : 'Unknown'
+            );
+
+            // Navigate to checkout page to handle 3DS
+            navigate('/vendor/onboarding/checkout', {
+              state: {
+                clientSecret: result.data.clientSecret,
+                planName: `${selectedPlan.name}`,
+                planPrice: formatPrice(selectedPlan.price, selectedPlan.currency),
+              },
+            });
+          } else {
+            console.log(
+              'No client secret provided, subscription created without payment'
+            );
+            // No 3D Secure required, subscription created successfully
+            await handleSubscriptionSuccess();
+          }
+        } else {
+          toast.error(result.message || 'Failed to create subscription');
+        }
       }
-
-      // Save to localStorage for persistence
-      updateOnboardingState({
-        data: subscriptionData,
-      });
-
-      await acceptSubscription(payload).unwrap();
-
-      // Mark step as completed
-      completeStep(OnboardingStep.SUBSCRIPTION_SETUP);
-
-      // Refetch user profile to get updated vendorOnboardingStatus
-      console.log('Refetching user profile after subscription...');
-      await refetchProfile();
-
-      // Trigger Redux reload to update user state
-      dispatch(setReload(true));
-
-      // Clear onboarding state as we're done
-      clearOnboardingState();
-
-      // Clear any other onboarding-related data
-      sessionStorage.removeItem('vendorStoreData');
-
-      // Show success modal
-      setShowSuccessModal(true);
     } catch (error: any) {
       console.error('Subscription error:', error);
       toast.error(error?.data?.message || 'Failed to activate subscription');
@@ -236,63 +299,79 @@ const SubscriptionSetup = () => {
             ))}
           </div>
 
+          {/* UK Pricing Cards - Debug Info */}
+          {!isNigeria && !monthlyPlan && !yearlyPlan && !isLoading && (
+            <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Debug:</strong> No subscription plans found. Please
+                check if plans are configured in the backend.
+                <br />
+                Plans data: {JSON.stringify(plans)}
+              </p>
+            </div>
+          )}
+
           {/* UK Pricing Cards */}
-          {!isNigeria && monthlyPlan && yearlyPlan && (
+          {!isNigeria && (monthlyPlan || yearlyPlan) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               {/* Monthly Plan */}
-              <button
-                onClick={() => setSelectedPlan(monthlyPlan)}
-                className={`p-6 border-2 rounded-lg text-left transition-all ${
-                  selectedPlan?._id === monthlyPlan._id
-                    ? 'border-[#CC5A88] bg-[#FFEFF6]'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Monthly
-                  </h3>
-                  <div className="mt-2">
-                    <span className="text-3xl font-bold text-gray-900">
-                      {formatPrice(monthlyPlan.price, monthlyPlan.currency)}
-                    </span>
-                    <span className="text-gray-600">/month</span>
+              {monthlyPlan && (
+                <button
+                  onClick={() => setSelectedPlan(monthlyPlan)}
+                  className={`p-6 border-2 rounded-lg text-left transition-all ${
+                    selectedPlan?._id === monthlyPlan._id
+                      ? 'border-[#CC5A88] bg-[#FFEFF6]'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Monthly
+                    </h3>
+                    <div className="mt-2">
+                      <span className="text-3xl font-bold text-gray-900">
+                        {formatPrice(monthlyPlan.price, monthlyPlan.currency)}
+                      </span>
+                      <span className="text-gray-600">/month</span>
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-gray-600">
-                  {monthlyPlan.description}
-                </p>
-              </button>
+                  <p className="text-sm text-gray-600">
+                    {monthlyPlan.description}
+                  </p>
+                </button>
+              )}
 
               {/* Yearly Plan */}
-              <button
-                onClick={() => setSelectedPlan(yearlyPlan)}
-                className={`p-6 border-2 rounded-lg text-left transition-all relative ${
-                  selectedPlan?._id === yearlyPlan._id
-                    ? 'border-[#CC5A88] bg-[#FFEFF6]'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="absolute top-4 right-4">
-                  <span className="px-2 py-1 bg-[#16A34A] text-white text-xs font-semibold rounded">
-                    Save 20%
-                  </span>
-                </div>
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Yearly
-                  </h3>
-                  <div className="mt-2">
-                    <span className="text-3xl font-bold text-gray-900">
-                      {formatPrice(yearlyPlan.price, yearlyPlan.currency)}
+              {yearlyPlan && (
+                <button
+                  onClick={() => setSelectedPlan(yearlyPlan)}
+                  className={`p-6 border-2 rounded-lg text-left transition-all relative ${
+                    selectedPlan?._id === yearlyPlan._id
+                      ? 'border-[#CC5A88] bg-[#FFEFF6]'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="absolute top-4 right-4">
+                    <span className="px-2 py-1 bg-[#16A34A] text-white text-xs font-semibold rounded">
+                      Save 20%
                     </span>
-                    <span className="text-gray-600">/year</span>
                   </div>
-                </div>
-                <p className="text-sm text-gray-600">
-                  {yearlyPlan.description}
-                </p>
-              </button>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Yearly
+                    </h3>
+                    <div className="mt-2">
+                      <span className="text-3xl font-bold text-gray-900">
+                        {formatPrice(yearlyPlan.price, yearlyPlan.currency)}
+                      </span>
+                      <span className="text-gray-600">/year</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {yearlyPlan.description}
+                  </p>
+                </button>
+              )}
             </div>
           )}
 
@@ -302,8 +381,12 @@ const SubscriptionSetup = () => {
               variant="default"
               size="full"
               onClick={handleStartTrial}
-              disabled={(!isNigeria && !selectedPlan) || isAccepting}
-              loading={isAccepting}
+              disabled={
+                (!isNigeria && !selectedPlan) ||
+                isAccepting ||
+                isCreatingSubscription
+              }
+              loading={isAccepting || isCreatingSubscription}
               className="bg-[#60983C] hover:bg-[#4d7a30] text-lg py-4"
             >
               {isNigeria
@@ -316,6 +399,7 @@ const SubscriptionSetup = () => {
               </p>
             )}
           </div>
+
 
           {/* Success Modal */}
           {showSuccessModal && (

@@ -1,9 +1,9 @@
-import { FC } from "react";
-import { useModal } from "./ModalProvider";
-import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
+import { FC } from 'react';
+import { useModal } from './ModalProvider';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 
-import cancel from "@/assets/images/cancel.png";
-import { Button } from "../Buttons";
+import cancel from '@/assets/images/cancel.png';
+import { Button } from '../Buttons';
 
 interface ModalComponentProps {
   modalId: string;
@@ -14,8 +14,8 @@ const LogoutModal: FC<ModalComponentProps> = ({ modalId }) => {
   const isOpen = modalStates[modalId]?.isOpen;
 
   const logoutUser = async () => {
-    localStorage.removeItem("tokens");
-    window.location.replace("/auth/login");
+    localStorage.removeItem('tokens');
+    window.location.replace('/');
   };
 
   if (!isOpen) return null;
@@ -50,7 +50,7 @@ const LogoutModal: FC<ModalComponentProps> = ({ modalId }) => {
                 </p>
                 <div className="flex justify-center flex-col items-center space-y-3 pt-[24px]">
                   <Button
-                    size={"full"}
+                    size={'full'}
                     onClick={() => {
                       logoutUser();
                     }}

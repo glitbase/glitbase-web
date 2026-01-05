@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 
 interface GalleryProps {
   store: Store;
+  isReadOnly?: boolean;
 }
 
 interface GalleryImage {
@@ -17,9 +18,11 @@ interface GalleryImage {
   imageURL: string;
 }
 
-const Gallery = ({ store }: GalleryProps) => {
+const Gallery = ({ store, isReadOnly = false }: GalleryProps) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null
+  );
   const [imageToDelete, setImageToDelete] = useState<string | null>(null);
 
   const [fileUpload] = useFileUploadMutation();
@@ -76,7 +79,10 @@ const Gallery = ({ store }: GalleryProps) => {
   };
 
   const handleNextImage = () => {
-    if (selectedImageIndex !== null && selectedImageIndex < gallery.length - 1) {
+    if (
+      selectedImageIndex !== null &&
+      selectedImageIndex < gallery.length - 1
+    ) {
       setSelectedImageIndex(selectedImageIndex + 1);
     }
   };
@@ -99,32 +105,36 @@ const Gallery = ({ store }: GalleryProps) => {
       {/* Gallery Grid */}
       {gallery.length === 0 ? (
         <div className="bg-white rounded-lg p-12 text-center">
-          <div
-            className="w-16 h-16 cursor-pointer rounded-full flex items-center justify-center mx-auto mb-4"
-            onClick={() => document.getElementById('gallery-upload')?.click()}
-          >
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 48 48"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+          {!isReadOnly && (
+            <div
+              className="w-16 h-16 cursor-pointer rounded-full flex items-center justify-center mx-auto mb-4"
+              onClick={() => document.getElementById('gallery-upload')?.click()}
             >
-              <rect width="48" height="48" rx="24" fill="#4C9A2A" />
-              <path
-                d="M24 16V32M32 24H16"
-                stroke="white"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="48" height="48" rx="24" fill="#4C9A2A" />
+                <path
+                  d="M24 16V32M32 24H16"
+                  stroke="white"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          )}
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No images in gallery yet
+            {isReadOnly ? 'No images available' : 'No images in gallery yet'}
           </h3>
           <p className="text-gray-500 mb-6 max-w-md mx-auto">
-            Showcase your work by adding images to your gallery
+            {isReadOnly
+              ? 'This store has not added any gallery images yet'
+              : 'Showcase your work by adding images to your gallery'}
           </p>
         </div>
       ) : (
@@ -141,58 +151,62 @@ const Gallery = ({ store }: GalleryProps) => {
                 className="w-full h-full object-cover"
               />
               {/* Delete Button - Top Right */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setImageToDelete(image.id);
-                }}
-                className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-full flex items-center justify-center transition-all"
-                title="Delete image"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {!isReadOnly && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImageToDelete(image.id);
+                  }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-full flex items-center justify-center transition-all"
+                  title="Delete image"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
 
       {/* Floating Add Button */}
-      <button
-        onClick={() => document.getElementById('gallery-upload')?.click()}
-        disabled={isUploading}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-[#4C9A2A] hover:bg-[#3d7a22] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-30 disabled:opacity-50"
-        title="Add image"
-      >
-        {isUploading ? (
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-        ) : (
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-        )}
-      </button>
+      {!isReadOnly && (
+        <button
+          onClick={() => document.getElementById('gallery-upload')?.click()}
+          disabled={isUploading}
+          className="fixed bottom-8 right-8 w-14 h-14 bg-[#4C9A2A] hover:bg-[#3d7a22] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-30 disabled:opacity-50"
+          title="Add image"
+        >
+          {isUploading ? (
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+          ) : (
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+          )}
+        </button>
+      )}
 
       {/* Image Preview Lightbox */}
       {selectedImageIndex !== null && gallery[selectedImageIndex] && (

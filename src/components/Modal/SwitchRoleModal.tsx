@@ -7,10 +7,8 @@ import { Button } from "../Buttons";
 import { handleError } from "@/utils/notify";
 import { useSwitchActiveRoleMutation } from "@/redux/auth";
 import { PasswordInput } from "../Inputs/PasswordInput";
-import { useAppSelector } from "@/hooks/redux-hooks";
-import { useDispatch } from "react-redux";
-import { useAuth } from "@/AuthContext";
-import { setAuthenticated, setUser } from "@/redux/auth/authSlice";
+import { useAppSelector, useAppDispatch } from "@/hooks/redux-hooks";
+import { setTokens, setUser } from "@/redux/auth/authSlice";
 
 interface ModalComponentProps {
   modalId: string;
@@ -20,8 +18,7 @@ const SwitchRoleModal: FC<ModalComponentProps> = ({ modalId }) => {
   const { modalStates, hideModal } = useModal();
   const isOpen = modalStates[modalId]?.isOpen;
   const user = useAppSelector((state) => state.auth.user);
-  const dispatch = useDispatch()
-  const { setTokens } = useAuth();
+  const dispatch = useAppDispatch();
 
   const [password, setPassword] = useState<string>("");
 
@@ -31,8 +28,7 @@ const SwitchRoleModal: FC<ModalComponentProps> = ({ modalId }) => {
     try {
       const { data } = await switchActiveRole({role: user?.activeRole === 'customer' ? 'vendor' : 'customer', password}).unwrap();
       // console.log("SWITCH ROLE DATA:", data?.user);
-      setTokens(data?.tokens);
-      dispatch(setAuthenticated());
+      dispatch(setTokens(data?.tokens));
       dispatch(setUser(data?.user));
       window.location.reload();
     } catch (error) {

@@ -10,11 +10,12 @@ import { setNextpage } from '@/redux/auth/authSlice';
 import { handleError, sendMessage } from '@/utils/notify';
 import { validateFields } from '@/utils/validator';
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { GoBack } from '@/components/GoBack';
 
 function ResetPassword() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const [payload, setPayload] = useState({
     password: '',
     confirmPassword: '',
@@ -23,7 +24,9 @@ function ResetPassword() {
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
   const [errors, setErrors] = useState<any>(null);
   const [touched, setTouched] = useState<any>([]);
-  const userData = JSON.parse(localStorage.getItem('otp') as string);
+  
+  // Get data from navigation state instead of localStorage
+  const userData = location.state as { email: string; otp: string } | null;
 
   useEffect(() => {
     let x = validateFields(['password', 'confirmPassword'], payload);
@@ -33,13 +36,19 @@ function ResetPassword() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
+    if (!userData?.email || !userData?.otp) {
+      handleError({ message: 'Session expired. Please start the password reset process again.' });
+      navigate('/auth/forgot-password');
+      return;
+    }
+    
     try {
       await resetPassword({
         password: payload.password,
         email: userData.email,
         otp: userData.otp,
       }).unwrap();
-      // dispatch(setNextpage(`/auth/reset-success`));
       navigate('/auth/reset-success');
       sendMessage('Your password was reset successfully', 'success');
     } catch (error: any) {

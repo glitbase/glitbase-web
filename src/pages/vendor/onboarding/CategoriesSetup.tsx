@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/Buttons';
 import { Typography } from '@/components/Typography';
 import VendorOnboardingLayout from './VendorOnboardingLayout';
@@ -8,20 +8,16 @@ import { useGetMarketplaceCategoriesQuery } from '@/redux/vendor';
 import { toast } from 'react-toastify';
 import CategoryCardSkeleton from '@/components/EntityCards/CategoryCardSkeleton';
 import AuthLayout from '@/layout/auth';
-import {
-  getOnboardingState,
-  updateOnboardingState,
-  completeStep,
-  OnboardingStep,
-} from '@/utils/vendorOnboarding';
 
 const CategoriesSetup = () => {
   const navigate = useNavigate();
-
-  // Load saved data from localStorage
-  const savedState = getOnboardingState();
+  const location = useLocation();
+  
+  // Get data passed from previous step via navigation state
+  const storeData = location.state?.storeData || {};
+  
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    savedState.data.categories || []
+    storeData.categories || []
   );
 
   const { data, isLoading, error } =
@@ -47,32 +43,15 @@ const CategoriesSetup = () => {
       return;
     }
 
-    // Save to localStorage for persistence
-    updateOnboardingState({
-      data: {
-        categories: selectedCategories,
+    // Pass data to next step via navigation state
+    navigate('/vendor/onboarding/visibility', {
+      state: {
+        storeData: {
+          ...storeData,
+          preferredCategories: selectedCategories,
+        },
       },
     });
-
-    // Mark step as completed and set next step
-    completeStep(
-      OnboardingStep.CATEGORIES_SETUP,
-      OnboardingStep.VISIBILITY_SETUP
-    );
-
-    // Get existing store data and add categories (for backward compatibility)
-    const existingData = JSON.parse(
-      sessionStorage.getItem('vendorStoreData') || '{}'
-    );
-    const updatedData = {
-      ...existingData,
-      preferredCategories: selectedCategories,
-    };
-
-    sessionStorage.setItem('vendorStoreData', JSON.stringify(updatedData));
-
-    // Navigate to visibility setup
-    navigate('/vendor/onboarding/visibility');
   };
 
   return (

@@ -8,6 +8,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { appApi } from './app';
 import { entityApi } from './entity';
 import { vendorApi } from './vendor';
+import { bookingApi } from './booking';
 
 // Determine if the development tools should be enabled
 const devtool = (import.meta.env.VITE_ENV === 'DEV') === true;
@@ -18,7 +19,8 @@ const middleware = (getDefaultMiddleware: any) =>
     appApi.middleware,
     authApi.middleware,
     entityApi.middleware,
-    vendorApi.middleware
+    vendorApi.middleware,
+    bookingApi.middleware
   );
 
 export const store = configureStore({

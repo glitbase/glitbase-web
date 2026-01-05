@@ -1,4 +1,8 @@
+import { useNavigate } from 'react-router-dom';
+
 type ProviderCardProps = {
+  id?: string;
+  _id?: string;
   name: string;
   bannerImageUrl: string;
   rating: number;
@@ -10,8 +14,24 @@ interface ProviderCardProp {
 }
 
 const ProviderCard = ({ item }: ProviderCardProp) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    const storeId = item?.id || item?._id;
+    console.log('Provider card clicked:', item);
+    if (storeId) {
+      console.log('Navigating to store:', storeId);
+      navigate(`/store/${storeId}`);
+    } else {
+      console.warn('No id or _id found in item:', item);
+    }
+  };
+
   return (
-    <div className="flex-shrink-0 w-[156px]">
+    <div
+      onClick={handleClick}
+      className="flex-shrink-0 w-[156px] cursor-pointer hover:opacity-80 transition-opacity"
+    >
       <div className="relative">
         <img
           src={

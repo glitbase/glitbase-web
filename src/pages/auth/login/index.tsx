@@ -1,4 +1,3 @@
-import { useAuth } from '@/AuthContext';
 import { Button } from '@/components/Buttons';
 import { GoBack } from '@/components/GoBack';
 import { PasswordInput } from '@/components/Inputs/PasswordInput';
@@ -11,13 +10,15 @@ import { validateFields } from '@/utils/validator';
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/redux-hooks';
-import { setAuthenticated, setUser } from '@/redux/auth/authSlice';
+import { setTokens, setUser } from '@/redux/auth/authSlice';
 import GoogleAuth from '../GoogleAuth';
+
 const Login = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const emailFromQuery = queryParams.get('email') || '';
   const action = queryParams.get('action');
+  const returnUrl = queryParams.get('returnUrl');
 
   const [payload, setPayload] = useState({
     email: emailFromQuery,
@@ -27,7 +28,6 @@ const Login = () => {
   const [login, { isLoading, data }] = useLoginMutation();
   const [errors, setErrors] = useState<any>(null);
   const [touched, setTouched] = useState<any>(emailFromQuery ? ['email'] : []);
-  const { setTokens } = useAuth();
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -52,8 +52,7 @@ const Login = () => {
       }).unwrap();
 
       trackAction('User login', { email: payload.email });
-      setTokens(response.tokens);
-      dispatch(setAuthenticated());
+      dispatch(setTokens(response.tokens));
       dispatch(setUser(response.user));
 
       // Check if user needs to complete interests selection
@@ -65,6 +64,17 @@ const Login = () => {
       } else if (!hasInterests && response.user?.activeRole === 'customer') {
         // Route customer users without interests to interests selection
         navigate('/auth/signup/interests');
+      } else if (returnUrl) {
+        // Validate returnUrl is internal (starts with /) and redirect
+        const decodedReturnUrl = decodeURIComponent(returnUrl);
+        if (
+          decodedReturnUrl.startsWith('/') &&
+          !decodedReturnUrl.startsWith('/auth/')
+        ) {
+          navigate(decodedReturnUrl);
+        } else {
+          navigate('/');
+        }
       } else {
         navigate('/');
       }

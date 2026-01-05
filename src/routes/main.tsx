@@ -1,8 +1,8 @@
 import DashboardLayout from '@/layout/dashboard';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux-hooks';
 import { useUserProfileQuery } from '@/redux/auth';
 import {
@@ -10,12 +10,15 @@ import {
   setReload,
   setEmail,
   setArrayUserToken,
-  setUnauthenticated,
+  setInitialized,
+  selectHasTokens,
+  selectIsInitialized,
 } from '@/redux/auth/authSlice';
 import * as amplitude from '@amplitude/analytics-browser';
 import Profile from '@/pages/profileInformation';
 import OrderDetails from '@/pages/profileInformation/orderHistory/orderDetails';
-import VendorOnboardingGuard from './VendorOnboardingGuard';
+import ProtectedRouteProvider from './ProtectedRouteProvider';
+import VendorRouteGuard from './VendorRouteGuard';
 import Settings from '@/pages/settings';
 import {
   PayoutDetails,
@@ -32,23 +35,17 @@ import {
 const Home = React.lazy(() => import('@/pages/home'));
 const SearchResults = React.lazy(() => import('@/pages/home/SearchResults'));
 const VendorRoutes = React.lazy(() => import('./vendor'));
+const StorePage = React.lazy(() => import('@/pages/vendor/store'));
+const CreateBooking = React.lazy(() => import('@/pages/booking/CreateBooking'));
 
-const Dashhboard = () => {
+const Dashboard = () => {
   const Comp = DashboardLayout;
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
+  // Use Redux selectors instead of localStorage
+  const hasTokens = useAppSelector(selectHasTokens);
+  const isInitialized = useAppSelector(selectIsInitialized);
   const reload = useAppSelector((state) => state.auth.reload);
-  const isAuth = useAppSelector((state) => state.auth.isAuth);
-
-  const [loadAccount, setLoadAccount] = useState(false);
-  const [hasToken, setHasToken] = useState(!!localStorage.getItem('tokens'));
-
-  // Update hasToken when auth state changes
-  useEffect(() => {
-    const tokenExists = !!localStorage.getItem('tokens');
-    setHasToken(tokenExists);
-  }, [isAuth]);
 
   const {
     data: userProfile,
@@ -56,9 +53,12 @@ const Dashhboard = () => {
     refetch,
     error,
   } = useUserProfileQuery(undefined, {
-    skip: !hasToken, // Skip the query if there's no token
+    skip: !hasTokens, // Skip the query if there's no token
     refetchOnMountOrArgChange: true,
   });
+
+  // Only show loading state if we have a token and are actually fetching user data
+  const shouldShowLoading = hasTokens && userLoading && !isInitialized;
 
   useEffect(() => {
     if (reload) {
@@ -66,14 +66,13 @@ const Dashhboard = () => {
     }
   }, [reload, refetch]);
 
+  // Handle user profile data
   useEffect(() => {
-    if (!loadAccount) {
-      setLoadAccount(true);
-    }
-  }, [loadAccount]);
-
-  useEffect(() => {
-    if (!hasToken) {
+    if (!hasTokens) {
+      // Mark as initialized even without tokens (public access is okay)
+      if (!isInitialized) {
+        dispatch(setInitialized(true));
+      }
       return;
     }
 
@@ -84,6 +83,10 @@ const Dashhboard = () => {
     const apiUser = userProfile?.data?.user;
 
     if (!apiUser) {
+      // No user data but we have tokens - wait a bit more
+      if (!userLoading && !isInitialized) {
+        dispatch(setInitialized(true));
+      }
       return;
     }
 
@@ -98,80 +101,141 @@ const Dashhboard = () => {
       }
       dispatch(setReload(false));
     } else {
-      dispatch(setUnauthenticated());
-      logoutUser();
+      // Email not verified - mark as initialized but don't set user
+      // Don't logout - just keep them in an unauthenticated state
+      // They'll be redirected to verification by route guards if they try to access protected routes
+      dispatch(setInitialized(true));
     }
-  }, [userProfile, userLoading, dispatch, hasToken, refetch]);
+  }, [userProfile, userLoading, dispatch, hasTokens, isInitialized]);
 
-  // Redirect to auth page if user is not authenticated and has no token
+  // Handle profile query errors gracefully
+  // The dashboard is publicly accessible, so users can stay on it without being logged in
+  // We do NOT clear tokens on errors - the baseQueryWithReauth handles token refresh
+  // Only mark as initialized so the UI can proceed
   useEffect(() => {
-    if (!isAuth && !hasToken && !userLoading) {
-      navigate('/auth/login', { replace: true });
+    if (error && !userLoading && !isInitialized) {
+      // Don't logout on errors - just mark as initialized
+      // The user might have invalid/expired tokens, but we shouldn't clear them
+      // as the refresh mechanism might handle it on subsequent requests
+      dispatch(setInitialized(true));
     }
-  }, [isAuth, hasToken, userLoading, navigate]);
-
-  // Handle profile query errors (e.g., 401)
-  useEffect(() => {
-    if (error && !userLoading) {
-      dispatch(setUnauthenticated());
-      localStorage.removeItem('token');
-      localStorage.removeItem('tokens');
-      navigate('/auth/login', { replace: true });
-    }
-  }, [error, userLoading, navigate, dispatch]);
-
-  const logoutUser = async () => {
-    dispatch(setUnauthenticated());
-    localStorage.removeItem('token');
-  };
+  }, [error, userLoading, dispatch, isInitialized]);
 
   return (
-    <Comp isLoading={userLoading}>
-      <VendorOnboardingGuard>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/search" element={<SearchResults />} />
-          <Route path="/home/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route
-            path="/settings/payment-billings/payout-details"
-            element={<PayoutDetails />}
-          />
-          <Route
-            path="/settings/payment-billings/payment-policy"
-            element={<PaymentPolicy />}
-          />
-          <Route
-            path="/settings/business-settings/store-info"
-            element={<StoreInfo />}
-          />
-          <Route
-            path="/settings/business-settings/business-address"
-            element={<BusinessAddress />}
-          />
-          <Route
-            path="/settings/operations/store-availability"
-            element={<StoreAvailability />}
-          />
-          <Route
-            path="/settings/operations/booking-policies"
-            element={<BookingPolicies />}
-          />
-          <Route
-            path="/settings/operations/giftfinder-tags"
-            element={<GiftfinderTags />}
-          />
-          <Route
-            path="/settings/operations/business-category"
-            element={<BusinessCategory />}
-          />
-          <Route path="/order-details/:orderId" element={<OrderDetails />} />
-          <Route path="/vendor/*" element={<VendorRoutes />} />
-          <Route path="*" element={<Navigate to="/overview" replace />} />
-        </Routes>
-      </VendorOnboardingGuard>
+    <Comp isLoading={shouldShowLoading}>
+      <Routes>
+        {/* Public routes - no authentication required */}
+        <Route path="/" element={<Home />} />
+        <Route path="/search" element={<SearchResults />} />
+        <Route path="/store/:storeId" element={<StorePage />} />
+        <Route path="/booking/create" element={<CreateBooking />} />
+
+        {/* Protected routes - authentication required */}
+        <Route
+          path="/home/profile"
+          element={
+            <ProtectedRouteProvider>
+              <Profile />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRouteProvider>
+              <Settings />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/payment-billings/payout-details"
+          element={
+            <ProtectedRouteProvider>
+              <PayoutDetails />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/payment-billings/payment-policy"
+          element={
+            <ProtectedRouteProvider>
+              <PaymentPolicy />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/business-settings/store-info"
+          element={
+            <ProtectedRouteProvider>
+              <StoreInfo />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/business-settings/business-address"
+          element={
+            <ProtectedRouteProvider>
+              <BusinessAddress />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/operations/store-availability"
+          element={
+            <ProtectedRouteProvider>
+              <StoreAvailability />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/operations/booking-policies"
+          element={
+            <ProtectedRouteProvider>
+              <BookingPolicies />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/operations/giftfinder-tags"
+          element={
+            <ProtectedRouteProvider>
+              <GiftfinderTags />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/operations/business-category"
+          element={
+            <ProtectedRouteProvider>
+              <BusinessCategory />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/order-details/:orderId"
+          element={
+            <ProtectedRouteProvider>
+              <OrderDetails />
+            </ProtectedRouteProvider>
+          }
+        />
+
+        {/* Vendor routes - authentication + vendor role required */}
+        <Route
+          path="/vendor/*"
+          element={
+            <ProtectedRouteProvider>
+              <VendorRouteGuard>
+                <VendorRoutes />
+              </VendorRouteGuard>
+            </ProtectedRouteProvider>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Comp>
   );
 };
 
-export default Dashhboard;
+export default Dashboard;

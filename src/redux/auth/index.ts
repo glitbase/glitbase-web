@@ -155,8 +155,13 @@ export const authApi = createApi({
           // console.log('user profile:', data?.data?.user)
           dispatch(setAuthenticated());
           dispatch(setUser(data.data.user));
-        } catch {
-          dispatch(setUnauthenticated());
+        } catch (error: any) {
+          // Only mark as unauthenticated on 401 (unauthorized) errors
+          // Don't clear tokens on network errors or other temporary failures
+          if (error?.error?.status === 401) {
+            dispatch(setUnauthenticated());
+          }
+          // For other errors, keep the current auth state
         }
       },
     }),

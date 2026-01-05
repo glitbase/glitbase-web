@@ -4,9 +4,10 @@ import { Store } from '@/redux/vendor/storeSlice';
 
 interface AboutProps {
   store: Store;
+  isReadOnly?: boolean;
 }
 
-const About = ({ store }: AboutProps) => {
+const About = ({ store, isReadOnly = false }: AboutProps) => {
   const navigate = useNavigate();
 
   const formatTime = (time: string) => {
@@ -99,10 +100,40 @@ const About = ({ store }: AboutProps) => {
                 </p>
               </div>
             </div>
+            {!isReadOnly && (
+              <button
+                onClick={() => navigate('/vendor/store/edit-location')}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                title="Edit location"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Opening Hours */}
+      <div className="bg-white rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Opening Hours</h2>
+          {!isReadOnly && (
             <button
-              onClick={() => navigate('/vendor/store/edit-location')}
+              onClick={() => navigate('/vendor/store/edit-opening-hours')}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
-              title="Edit location"
+              title="Edit opening hours"
             >
               <svg
                 className="w-5 h-5"
@@ -118,33 +149,7 @@ const About = ({ store }: AboutProps) => {
                 />
               </svg>
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Opening Hours */}
-      <div className="bg-white rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Opening Hours</h2>
-          <button
-            onClick={() => navigate('/vendor/store/edit-opening-hours')}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
-            title="Edit opening hours"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
+          )}
         </div>
         <div className="space-y-3">
           {displayOpeningHours.map((oh) => (

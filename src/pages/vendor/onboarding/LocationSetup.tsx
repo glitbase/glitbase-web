@@ -1,18 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/Buttons';
 import { Typography } from '@/components/Typography';
 import VendorOnboardingLayout from './VendorOnboardingLayout';
 import { useCreateStoreMutation } from '@/redux/vendor';
 import { toast } from 'react-toastify';
 import LocationSelector from '@/components/LocationSelector';
-import {
-  getOnboardingState,
-  updateOnboardingState,
-  completeStep,
-  OnboardingStep,
-} from '@/utils/vendorOnboarding';
 import AuthLayout from '@/layout/auth';
 
 interface Location {
@@ -29,17 +23,19 @@ interface Location {
 
 const LocationSetup = () => {
   const navigate = useNavigate();
-
-  // Load saved data from localStorage
-  const savedState = getOnboardingState();
+  const location = useLocation();
+  
+  // Get data passed from previous steps via navigation state
+  const storeData = location.state?.storeData || {};
+  
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
-    savedState.data.location || null
+    storeData.location || null
   );
   const [noFixedAddress, setNoFixedAddress] = useState(false);
   const [createStore, { isLoading }] = useCreateStoreMutation();
 
-  const handleLocationSelect = (location: Location) => {
-    setSelectedLocation(location);
+  const handleLocationSelect = (loc: Location) => {
+    setSelectedLocation(loc);
   };
 
   const handleContinue = async () => {
@@ -51,24 +47,14 @@ const LocationSetup = () => {
     }
 
     try {
-      // Save location to localStorage
-      updateOnboardingState({
-        data: {
-          location: noFixedAddress ? undefined : selectedLocation || undefined,
-        },
-      });
-
-      // Get all the collected data from previous steps
-      const savedState = getOnboardingState();
-
-      // Create the store with all data
+      // Create the store with all data collected from previous steps
       const payload = {
-        name: savedState.data.storeName,
-        type: savedState.data.storeTypes,
-        description: savedState.data.storeDescription,
-        bannerImageUrl: savedState.data.bannerImageUrl || '',
-        preferredCategories: savedState.data.categories,
-        tags: savedState.data.tags,
+        name: storeData.name || storeData.storeName,
+        type: storeData.type || storeData.storeTypes,
+        description: storeData.description || storeData.storeDescription,
+        bannerImageUrl: storeData.bannerImageUrl || '',
+        preferredCategories: storeData.preferredCategories || storeData.categories,
+        tags: storeData.tags,
         location: noFixedAddress
           ? null
           : {
@@ -97,9 +83,6 @@ const LocationSetup = () => {
 
       toast.success('Store created successfully!');
 
-      // Mark step as completed and set next step
-      completeStep(OnboardingStep.LOCATION_SETUP, OnboardingStep.PAYOUT_SETUP);
-
       // Navigate to the next step (payout setup)
       navigate('/vendor/onboarding/payout');
     } catch (error: any) {
@@ -116,7 +99,9 @@ const LocationSetup = () => {
         <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
           <div className="w-full mb-6">
             <button
-              onClick={() => navigate('/vendor/onboarding/visibility')}
+              onClick={() => navigate('/vendor/onboarding/visibility', {
+                state: { storeData }
+              })}
               className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
             >
               <svg

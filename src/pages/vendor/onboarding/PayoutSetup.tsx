@@ -10,31 +10,18 @@ import { useAppSelector } from '@/hooks/redux-hooks';
 import { toast } from 'react-toastify';
 import { nigerianBanks } from '@/utils/nigerianBanks';
 import { ukBanks } from '@/utils/ukBanks';
-import { 
-  getOnboardingState, 
-  updateOnboardingState, 
-  completeStep, 
-  OnboardingStep 
-} from '@/utils/vendorOnboarding';
 import AuthLayout from '@/layout/auth';
 
 const PayoutSetup = () => {
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
   const country = user?.countryCode || 'NG';
-  
-  // Load saved data from localStorage
-  const savedState = getOnboardingState();
-  const savedPayoutInfo = savedState.data.payoutInfo || {};
 
-  const [fullName, setFullName] = useState(savedPayoutInfo.fullName || '');
-  const [accountNumber, setAccountNumber] = useState(savedPayoutInfo.accountNumber || '');
-  const [selectedBank, setSelectedBank] = useState<any>(
-    savedPayoutInfo.bankName 
-      ? { name: savedPayoutInfo.bankName, sortCode: savedPayoutInfo.sortCode } 
-      : null
-  );
-  const [sortCode, setSortCode] = useState(savedPayoutInfo.sortCode || '');
+  // Form state - no localStorage needed
+  const [fullName, setFullName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [selectedBank, setSelectedBank] = useState<any>(null);
+  const [sortCode, setSortCode] = useState('');
   const [showBankModal, setShowBankModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [errors, setErrors] = useState<any>({});
@@ -113,30 +100,16 @@ const PayoutSetup = () => {
     }
 
     try {
-      const payoutData = {
+      // API payload - no localStorage needed
+      const payload: any = {
+        country: country,
         fullName: fullName.trim(),
         accountNumber: accountNumber,
         bankName: selectedBank.name,
         sortCode: requiresSortCode ? sortCode : undefined
       };
-      
-      // Save to localStorage for persistence
-      updateOnboardingState({
-        data: {
-          payoutInfo: payoutData
-        }
-      });
-      
-      // API payload
-      const payload: any = {
-        country: country,
-        ...payoutData
-      };
 
       await createPayoutInfo(payload).unwrap();
-      
-      // Mark step as completed and set next step
-      completeStep(OnboardingStep.PAYOUT_SETUP, OnboardingStep.SUBSCRIPTION_SETUP);
 
       toast.success('Payout information saved successfully!');
 

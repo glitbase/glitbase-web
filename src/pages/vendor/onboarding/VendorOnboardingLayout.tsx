@@ -1,7 +1,8 @@
 import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLogoutMutation } from '@/redux/auth';
-import { useAuth } from '@/AuthContext';
+import { useAppDispatch } from '@/hooks/redux-hooks';
+import { logout as logoutAction } from '@/redux/auth/authSlice';
 import { toast } from 'react-toastify';
 import { Typography } from '@/components/Typography';
 
@@ -18,21 +19,18 @@ const VendorOnboardingLayout = ({
   currentStep,
   showLogout = true,
 }: VendorOnboardingLayoutProps) => {
+  console.log('📋 VendorOnboardingLayout: Rendering', { progress, currentStep });
+
   const navigate = useNavigate();
-  const { setTokens } = useAuth();
+  const dispatch = useAppDispatch();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
 
   const handleLogout = async () => {
     try {
       await logout({}).unwrap();
-      setTokens({
-        accessToken: '',
-        refreshToken: '',
-        expiresIn: 0,
-        expirationTime: 0,
-      });
-      localStorage.clear();
-      navigate('/auth/login');
+      dispatch(logoutAction());
+      console.log('📋 VendorOnboardingLayout: Logout complete, navigating to /');
+      navigate('/');
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : 'Logout failed');
     }

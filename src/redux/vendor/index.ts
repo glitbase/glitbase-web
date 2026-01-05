@@ -249,6 +249,28 @@ export const vendorApi = createApi({
         return response;
       },
     }),
+    // UK Subscription Endpoints
+    createSubscription: builder.mutation({
+      query: (payload) => ({
+        url: '/api/v1/subscriptions',
+        method: 'POST',
+        body: payload,
+      }),
+      invalidatesTags: ['SubscriptionPlans'],
+      transformResponse: (response: any) => {
+        return response;
+      },
+    }),
+    cancelSubscription: builder.mutation({
+      query: () => ({
+        url: '/api/v1/subscriptions',
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['SubscriptionPlans'],
+      transformResponse: (response: any) => {
+        return response;
+      },
+    }),
   }),
 });
 
@@ -276,4 +298,6 @@ export const {
   useUpdatePayoutInfoMutation,
   useGetActiveSubscriptionPlansQuery,
   useAcceptSubscriptionMutation,
+  useCreateSubscriptionMutation,
+  useCancelSubscriptionMutation,
 } = vendorApi;

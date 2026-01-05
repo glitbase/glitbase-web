@@ -2,8 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { fetchBaseQuery } from '@reduxjs/toolkit/query';
 import { navigateTo } from './navigationSlice';
-import { Tokens } from '../AuthContext';
-import { setLoading } from './auth/authSlice';
+import { Tokens, setLoading } from './auth/authSlice';
 
 let hasHandledSessionError = false;
 
@@ -103,7 +102,7 @@ const handleApiErrors = (error: any, api: any) => {
 
         api.dispatch(
           navigateTo({
-            path: `/auth/login`,
+            path: `/`,
             message: errorMessage,
           })
         );

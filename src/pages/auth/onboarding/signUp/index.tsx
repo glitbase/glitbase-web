@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useAuth } from '@/AuthContext';
 import { Button } from '@/components/Buttons';
 import { GoBack } from '@/components/GoBack';
 import { PasswordInput } from '@/components/Inputs/PasswordInput';
@@ -12,7 +11,7 @@ import { validateFields } from '@/utils/validator';
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/redux-hooks';
-import { setNextpage } from '@/redux/auth/authSlice';
+import { setNextpage, setTokens } from '@/redux/auth/authSlice';
 import './signUp.css';
 import { useModal } from '@/components/Modal/ModalProvider';
 import { ModalId } from '@/Layout';
@@ -39,7 +38,6 @@ const Register = () => {
   const [touched, setTouched] = useState<any>([]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [countryCode, setCountryCode] = useState('+234');
-  const { setTokens } = useAuth();
 
   const handleChange = (name: string, value: string) => {
     if (name === 'confirmPassword') {
@@ -115,7 +113,7 @@ const Register = () => {
       }).unwrap();
 
       trackAction('User Sign-up', { email: payload.email });
-      setTokens(response.tokens);
+      dispatch(setTokens(response.tokens));
       dispatch(
         setNextpage(`/auth/${payload.email}/${payload.role}/onboard-otp`)
       );

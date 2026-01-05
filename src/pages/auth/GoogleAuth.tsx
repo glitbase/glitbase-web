@@ -2,7 +2,8 @@
 import { useGoogleAuthMutation } from '@/redux/auth'
 import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/AuthContext';
+import { useAppDispatch } from '@/hooks/redux-hooks';
+import { setTokens } from '@/redux/auth/authSlice';
 import { toast } from 'react-toastify';
 
 type GoogleAuthProps = {
@@ -14,7 +15,7 @@ const GoogleAuth = ({isSignup, role}: GoogleAuthProps) => {
 
   const [googleAuth] = useGoogleAuthMutation();
   const navigate = useNavigate();
-  const { setTokens } = useAuth();
+  const dispatch = useAppDispatch();
 
   const navigateAfterLogin = (user: any) => {
     // Check if user has interests (for customers only)
@@ -54,7 +55,7 @@ const GoogleAuth = ({isSignup, role}: GoogleAuthProps) => {
     const token = data?.tokens?.accessToken || data.token;
     const user = data?.user;
 
-    setTokens(data?.tokens);
+    dispatch(setTokens(data?.tokens));
 
     // Check if profile is complete
     if (!user.firstName || !user.lastName || !user.phoneNumber) {

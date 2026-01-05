@@ -169,6 +169,15 @@ export const appApi = createApi({
         return response.data;
       },
     }),
+    getStoreById: builder.query({
+      query: (storeId: string) => ({
+        url: `/api/v1/stores/${storeId}`,
+        method: 'GET',
+      }),
+      transformResponse: (response: any) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -184,4 +193,6 @@ export const {
   useLazySearchMarketplaceQuery,
   useFetchCountriesQuery,
   useUpdateProfileMutation,
+  useGetStoreByIdQuery,
+  useLazyGetStoreByIdQuery,
 } = appApi;

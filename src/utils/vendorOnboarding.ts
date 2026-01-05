@@ -1,18 +1,10 @@
 /**
- * Utility functions for managing vendor onboarding state in localStorage
+ * Utility functions for vendor onboarding
+ * 
+ * NOTE: This file has been refactored to REMOVE localStorage usage.
+ * The server (user.vendorOnboardingStatus) is now the source of truth for onboarding state.
+ * Step determination is based on what user data exists on the server.
  */
-
-export const VENDOR_ONBOARDING_KEY = 'vendorOnboardingState';
-
-const dedupeSteps = (steps: OnboardingStep[]): OnboardingStep[] => {
-  return Array.from(new Set(steps.filter((step) => typeof step === 'number')));
-};
-
-const getDefaultState = (): VendorOnboardingState => ({
-  currentStep: OnboardingStep.PROFILE_SETUP,
-  completed: [],
-  data: {},
-});
 
 export enum OnboardingStep {
   PROFILE_SETUP = 1,
@@ -23,137 +15,6 @@ export enum OnboardingStep {
   PAYOUT_SETUP = 7,
   SUBSCRIPTION_SETUP = 8,
 }
-
-export interface VendorOnboardingState {
-  currentStep: OnboardingStep;
-  completed: OnboardingStep[];
-  data: {
-    isOnlineOnly?: boolean;
-    // Profile data
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phoneNumber?: string;
-    countryCode?: string;
-    countryName?: string;
-
-    // Store data
-    storeName?: string;
-    storeTypes?: string[];
-    storeDescription?: string;
-    bannerImageUrl?: string;
-    profileImageUrl?: string;
-
-    // Categories data
-    categories?: string[];
-
-    // Visibility data
-    tags?: string[];
-
-    // Location data
-    location?: {
-      name: string;
-      address: string;
-      city: string;
-      state: string;
-      zipcode: string;
-      coordinates: {
-        latitude: number;
-        longitude: number;
-      };
-    };
-
-    // Payout data
-    payoutInfo?: {
-      fullName: string;
-      accountNumber: string;
-      bankName: string;
-      sortCode?: string;
-    };
-
-    // Subscription data
-    subscriptionType?: string;
-    planId?: string;
-  };
-}
-
-/**
- * Initialize or get the vendor onboarding state from localStorage
- */
-export const getOnboardingState = (): VendorOnboardingState => {
-  const storedState = localStorage.getItem(VENDOR_ONBOARDING_KEY);
-
-  if (storedState) {
-    try {
-      const parsed = JSON.parse(storedState);
-
-      if (parsed && typeof parsed === 'object') {
-        return {
-          currentStep:
-            typeof parsed.currentStep === 'number'
-              ? parsed.currentStep
-              : OnboardingStep.PROFILE_SETUP,
-          completed: dedupeSteps(
-            Array.isArray(parsed.completed) ? parsed.completed : []
-          ),
-          data:
-            parsed.data && typeof parsed.data === 'object' ? parsed.data : {},
-        };
-      }
-    } catch {
-      localStorage.removeItem(VENDOR_ONBOARDING_KEY);
-    }
-  }
-
-  return getDefaultState();
-};
-
-/**
- * Update the vendor onboarding state in localStorage
- */
-export const updateOnboardingState = (
-  state: Partial<VendorOnboardingState>
-): VendorOnboardingState => {
-  const currentState = getOnboardingState();
-  const updatedState = {
-    ...currentState,
-    ...state,
-    data: {
-      ...currentState.data,
-      ...(state.data || {}),
-    },
-  };
-
-  updatedState.completed = state.completed
-    ? dedupeSteps([...currentState.completed, ...state.completed])
-    : dedupeSteps(updatedState.completed);
-
-  localStorage.setItem(VENDOR_ONBOARDING_KEY, JSON.stringify(updatedState));
-  return updatedState;
-};
-
-/**
- * Mark a step as completed and update the current step
- */
-export const completeStep = (
-  step: OnboardingStep,
-  nextStep?: OnboardingStep
-): VendorOnboardingState => {
-  const currentState = getOnboardingState();
-
-  // Add the completed step if not already in the list
-  const completed = dedupeSteps([...currentState.completed, step]);
-
-  // Update the current step if provided
-  const updatedState = {
-    ...currentState,
-    completed,
-    currentStep: nextStep || currentState.currentStep,
-  };
-
-  localStorage.setItem(VENDOR_ONBOARDING_KEY, JSON.stringify(updatedState));
-  return updatedState;
-};
 
 /**
  * Get the route for the current onboarding step
@@ -185,27 +46,98 @@ export const getStepRoute = (step: OnboardingStep): string => {
 export const getStepProgress = (step: OnboardingStep): number => {
   switch (step) {
     case OnboardingStep.PROFILE_SETUP:
-      return 0; // Profile setup is handled separately
+      return 0;
     case OnboardingStep.STORE_SETUP:
       return 20;
     case OnboardingStep.CATEGORIES_SETUP:
-      return 66;
+      return 40;
     case OnboardingStep.VISIBILITY_SETUP:
-      return 83;
+      return 60;
     case OnboardingStep.LOCATION_SETUP:
-      return 100;
+      return 80;
     case OnboardingStep.PAYOUT_SETUP:
-      return 100;
+      return 90;
     case OnboardingStep.SUBSCRIPTION_SETUP:
-      return 100;
+      return 95;
     default:
       return 0;
   }
 };
 
 /**
- * Clear the onboarding state from localStorage
+ * Determine the current onboarding step based on user data from the server.
+ * This replaces the localStorage-based state machine.
+ * 
+ * @param user - The user object from the server
+ * @returns The current onboarding step, or null if complete
  */
-export const clearOnboardingState = (): void => {
-  localStorage.removeItem(VENDOR_ONBOARDING_KEY);
+export const determineCurrentStep = (user: any): OnboardingStep | null => {
+  if (!user) return null;
+  
+  // If onboarding is complete, return null
+  if (user.vendorOnboardingStatus === 'completed') {
+    return null;
+  }
+  
+  // Check profile completeness
+  const hasProfile = user.firstName && user.lastName && user.phoneNumber && user.countryCode;
+  if (!hasProfile) {
+    return OnboardingStep.PROFILE_SETUP;
+  }
+  
+  // Check if store exists
+  if (!user.hasStore) {
+    return OnboardingStep.STORE_SETUP;
+  }
+  
+  // Check payout info
+  if (!user.hasPayoutInfo) {
+    return OnboardingStep.PAYOUT_SETUP;
+  }
+  
+  // Check subscription
+  if (!user.hasSubInfo) {
+    return OnboardingStep.SUBSCRIPTION_SETUP;
+  }
+  
+  // Default to store setup if status is not 'completed' but all data exists
+  return OnboardingStep.STORE_SETUP;
+};
+
+/**
+ * Check if onboarding is complete
+ */
+export const isOnboardingComplete = (user: any): boolean => {
+  return user?.vendorOnboardingStatus === 'completed';
+};
+
+// ============================================================================
+// DEPRECATED FUNCTIONS - These used localStorage and are no longer needed
+// Kept as no-ops for backwards compatibility during migration
+// ============================================================================
+
+/** @deprecated No longer uses localStorage */
+export const getOnboardingState = () => ({
+  currentStep: OnboardingStep.PROFILE_SETUP,
+  completed: [] as OnboardingStep[],
+  data: {} as Record<string, any>,
+});
+
+/** @deprecated No longer uses localStorage */
+export const updateOnboardingState = (_state: any) => ({
+  currentStep: OnboardingStep.PROFILE_SETUP,
+  completed: [] as OnboardingStep[],
+  data: {} as Record<string, any>,
+});
+
+/** @deprecated No longer uses localStorage */
+export const completeStep = (_step: OnboardingStep, _nextStep?: OnboardingStep) => ({
+  currentStep: OnboardingStep.PROFILE_SETUP,
+  completed: [] as OnboardingStep[],
+  data: {} as Record<string, any>,
+});
+
+/** @deprecated No longer uses localStorage */
+export const clearOnboardingState = () => {
+  // No-op - localStorage is no longer used
 };

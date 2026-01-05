@@ -7,12 +7,6 @@ import { Input } from '@/components/Inputs/TextInput';
 import VendorOnboardingLayout from './VendorOnboardingLayout';
 import { toast } from 'react-toastify';
 import AuthLayout from '@/layout/auth';
-import {
-  getOnboardingState,
-  updateOnboardingState,
-  completeStep,
-  OnboardingStep,
-} from '@/utils/vendorOnboarding';
 import { useFileUploadMutation, useUpdateProfileMutation } from '@/redux/app';
 
 const storeTypes = [
@@ -39,26 +33,18 @@ const storeTypes = [
 ];
 
 const StoreSetup = () => {
+  console.log('🏪 StoreSetup: Component mounting', {
+    path: window.location.pathname
+  });
+
   const navigate = useNavigate();
 
-  // Load saved data from localStorage
-  const savedState = getOnboardingState();
-
-  const [businessName, setBusinessName] = useState(
-    savedState.data.storeName || ''
-  );
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(
-    savedState.data.storeTypes || []
-  );
-  const [description, setDescription] = useState(
-    savedState.data.storeDescription || ''
-  );
-  const [bannerImage, setBannerImage] = useState<string>(
-    savedState.data.bannerImageUrl || ''
-  );
-  const [profileImage, setProfileImage] = useState<string>(
-    savedState.data.profileImageUrl || ''
-  );
+  // Form state - no localStorage needed
+  const [businessName, setBusinessName] = useState('');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [description, setDescription] = useState('');
+  const [bannerImage, setBannerImage] = useState<string>('');
+  const [profileImage, setProfileImage] = useState<string>('');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({
     businessName: false,
@@ -120,32 +106,22 @@ const StoreSetup = () => {
       return;
     }
 
-    // Store data in localStorage for persistence
-    updateOnboardingState({
-      data: {
-        storeName: businessName,
-        storeTypes: selectedTypes,
-        storeDescription: description,
-        bannerImageUrl: bannerImage,
-        profileImageUrl: profileImage,
-      },
-    });
-
-    // Mark step as completed and set next step
-    completeStep(OnboardingStep.STORE_SETUP, OnboardingStep.CATEGORIES_SETUP);
-
-    // Also store in sessionStorage for backward compatibility
+    // Pass data to next step via navigation state (no localStorage)
     const storeData = {
       name: businessName,
+      storeName: businessName,
       type: selectedTypes,
+      storeTypes: selectedTypes,
       description: description,
+      storeDescription: description,
       bannerImageUrl: bannerImage,
       profileImageUrl: profileImage,
     };
-    sessionStorage.setItem('vendorStoreData', JSON.stringify(storeData));
 
-    // Navigate to categories setup
-    navigate('/vendor/onboarding/categories');
+    // Navigate to categories setup with store data
+    navigate('/vendor/onboarding/categories', {
+      state: { storeData },
+    });
   };
 
   const handleBannerUpload = async (file: File) => {
@@ -196,6 +172,8 @@ const StoreSetup = () => {
     }
   };
 
+  console.log('🏪 StoreSetup: Rendering UI');
+
   return (
     <AuthLayout isLoading={false}>
       <VendorOnboardingLayout progress={20} currentStep={3}>
@@ -234,31 +212,31 @@ const StoreSetup = () => {
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <g clip-path="url(#clip0_85_142839)">
+                  <g clipPath="url(#clip0_85_142839)">
                     <path
                       d="M5.25 4.50049C4.33452 4.50323 3.82787 4.52513 3.41155 4.69988C2.8284 4.94464 2.35351 5.39676 2.07608 5.97131C1.84964 6.44027 1.81258 7.04111 1.73847 8.24279L1.62234 10.1258C1.43804 13.1141 1.34589 14.6083 2.22276 15.5542C3.09964 16.5001 4.57689 16.5001 7.5314 16.5001H10.4686C13.4231 16.5001 14.9004 16.5001 15.7772 15.5542C16.6541 14.6083 16.562 13.1141 16.3777 10.1258L16.2615 8.24279C16.1874 7.04111 16.1504 6.44027 15.9239 5.97131C15.6465 5.39676 15.1716 4.94464 14.5885 4.69988C14.1721 4.52513 13.6655 4.50323 12.75 4.50049"
                       stroke="#0A0A0A"
-                      stroke-width="1.3"
-                      stroke-linecap="round"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
                     />
                     <path
                       d="M12.75 5.25L12.0856 3.58907C11.799 2.87247 11.5495 2.05958 10.8125 1.69466C10.4193 1.5 9.9462 1.5 9 1.5C8.0538 1.5 7.5807 1.5 7.18752 1.69466C6.45045 2.05958 6.20101 2.87247 5.91437 3.58907L5.25 5.25"
                       stroke="#0A0A0A"
-                      stroke-width="1.3"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
                     <path
                       d="M11.625 10.5C11.625 11.9497 10.4497 13.125 9 13.125C7.55025 13.125 6.375 11.9497 6.375 10.5C6.375 9.05025 7.55025 7.875 9 7.875C10.4497 7.875 11.625 9.05025 11.625 10.5Z"
                       stroke="#0A0A0A"
-                      stroke-width="1.3"
+                      strokeWidth="1.3"
                     />
                     <path
                       d="M8.99986 4.5H9.00659"
                       stroke="#0A0A0A"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
                   </g>
                   <defs>

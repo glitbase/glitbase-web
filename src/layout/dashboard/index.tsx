@@ -1,4 +1,3 @@
-import { useAppSelector } from '@/hooks/redux-hooks';
 import PageLoader from '@/PageLoader';
 
 const DashboardLayout = ({
@@ -8,11 +7,9 @@ const DashboardLayout = ({
   children?: React.ReactNode;
   isLoading: boolean;
 }) => {
-  const user = useAppSelector((state) => state.auth.user);
-
-  const shouldShowLoader = isLoading || !user;
-
-  if (shouldShowLoader) {
+  // Only show loader during actual loading state
+  // The dashboard is publicly accessible, so we don't block rendering for unauthenticated users
+  if (isLoading) {
     return <PageLoader />;
   }
 

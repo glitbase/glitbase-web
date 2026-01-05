@@ -7,6 +7,8 @@ import appSlice from './app/appSlice';
 import { appApi } from './app';
 import { entityApi } from './entity';
 import { vendorApi } from './vendor';
+import { bookingApi } from './booking';
+import bookingSlice from './booking/bookingSlice';
 import storeSlice from './vendor/storeSlice';
 
 export const rootReducer = combineReducers({
@@ -14,9 +16,11 @@ export const rootReducer = combineReducers({
   [appApi.reducerPath]: appApi.reducer,
   [entityApi.reducerPath]: entityApi.reducer,
   [vendorApi.reducerPath]: vendorApi.reducer,
+  [bookingApi.reducerPath]: bookingApi.reducer,
   auth: authSlice,
   app: appSlice,
   system: systemSlice,
   navigation: navigationSlice,
   vendorStore: storeSlice,
+  booking: bookingSlice,
 });
