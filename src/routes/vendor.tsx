@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import {
   StoreSetup,
   CategoriesSetup,
@@ -43,6 +43,7 @@ const VendorRoutes = () => {
       <Route path="onboarding/checkout/success" element={<CheckoutSuccess />} />
       <Route path="payout-setup" element={<PayoutSetup />} />
       <Route path="subscription-setup" element={<SubscriptionSetup />} />
+      <Route path="bookings" element={<Navigate to="/vendor/store" replace />} />
 
       {/* Dashboard routes - require completed onboarding */}
       <Route

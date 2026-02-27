@@ -5,7 +5,7 @@ import { baseQueryWithReauth } from '../configure';
 export const bookingApi = createApi({
   reducerPath: 'bookingApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Booking', 'Pricing', 'PaymentCards'],
+  tagTypes: ['Booking', 'Bookings', 'Pricing', 'PaymentCards'],
   endpoints: (builder) => ({
     calculatePricing: builder.mutation({
       query: (payload) => ({
@@ -24,6 +24,52 @@ export const bookingApi = createApi({
       }),
       transformResponse: (response: any) => response.data,
       invalidatesTags: ['Booking'],
+    }),
+    getUserBookings: builder.query({
+      query: ({
+        page = 1,
+        limit = 10,
+        status = 'all',
+      }: {
+        page?: number;
+        limit?: number;
+        status?: 'all' | 'pending' | 'ongoing' | 'completed' | 'rejected';
+      }) => {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        });
+        if (status && status !== 'all') params.append('status', status);
+
+        return {
+          url: `/api/v1/bookings?${params.toString()}`,
+          method: 'GET',
+        };
+      },
+      transformResponse: (response: any) => response.data,
+      providesTags: ['Bookings'],
+    }),
+    getBookingByReference: builder.query({
+      query: (reference: string) => ({
+        url: `/api/v1/bookings/${reference}`,
+        method: 'GET',
+      }),
+      transformResponse: (response: any) => response.data,
+      providesTags: (_result, _error, reference) => [
+        { type: 'Booking' as const, id: reference },
+      ],
+    }),
+    cancelBooking: builder.mutation({
+      query: ({ bookingId, reason }: { bookingId: string; reason: string }) => ({
+        url: `/api/v1/bookings/${bookingId}/cancel`,
+        method: 'POST',
+        body: { reason },
+      }),
+      transformResponse: (response: any) => response.data,
+      invalidatesTags: (_result, _error, arg) => [
+        'Bookings',
+        { type: 'Booking' as const, id: arg.bookingId },
+      ],
     }),
     getPaymentCards: builder.query({
       query: () => ({
@@ -63,6 +109,9 @@ export const bookingApi = createApi({
 export const {
   useCalculatePricingMutation,
   useCreateBookingMutation,
+  useGetUserBookingsQuery,
+  useGetBookingByReferenceQuery,
+  useCancelBookingMutation,
   useGetPaymentCardsQuery,
   useInitiatePaymentMutation,
   useCompletePaymentMutation,

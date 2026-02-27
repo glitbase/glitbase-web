@@ -37,6 +37,7 @@ const SearchResults = React.lazy(() => import('@/pages/home/SearchResults'));
 const VendorRoutes = React.lazy(() => import('./vendor'));
 const StorePage = React.lazy(() => import('@/pages/vendor/store'));
 const CreateBooking = React.lazy(() => import('@/pages/booking/CreateBooking'));
+const Bookings = React.lazy(() => import('@/pages/bookings'));
 
 const Dashboard = () => {
   const Comp = DashboardLayout;
@@ -131,6 +132,14 @@ const Dashboard = () => {
         <Route path="/booking/create" element={<CreateBooking />} />
 
         {/* Protected routes - authentication required */}
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRouteProvider>
+              <Bookings />
+            </ProtectedRouteProvider>
+          }
+        />
         <Route
           path="/home/profile"
           element={

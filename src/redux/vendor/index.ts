@@ -182,6 +182,23 @@ export const vendorApi = createApi({
         return response.data;
       },
     }),
+    createStoreReview: builder.mutation({
+      query: ({
+        storeId,
+        rating,
+        message,
+      }: {
+        storeId: string;
+        rating: number;
+        message: string;
+      }) => ({
+        url: `/api/v1/reviews/stores/${storeId}`,
+        method: 'POST',
+        body: { rating, message },
+      }),
+      invalidatesTags: ['Reviews'],
+      transformResponse: (response: any) => response.data,
+    }),
 
     // Marketplace Categories
     getMarketplaceCategories: builder.query({
@@ -292,6 +309,7 @@ export const {
   useGetStoreReviewsQuery,
   useLazyGetStoreReviewsQuery,
   useGetStoreReviewMetricsQuery,
+  useCreateStoreReviewMutation,
   useGetMarketplaceCategoriesQuery,
   useCreatePayoutInfoMutation,
   useGetPayoutInfoQuery,
