@@ -3,13 +3,13 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { ColorRing } from 'react-loader-spinner';
 
 const buttonVariants = cva(
-  'inline-flex h-[40px] items-center px-[14px] justify-center rounded-lg text-[14px] font-medium font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:bg-[#33333333] disabled:pointer-events-none ring-offset-background',
+  'inline-flex h-[44px] items-center px-[14px] justify-center rounded-full text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:bg-[#E7E7E7] disabled:pointer-events-none ring-offset-background',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-white hover:bg-primary-foreground',
+        default: 'bg-[#4C9A2A] text-white hover:bg-[#3d7b22]',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+          'bg-[#D10606] text-white hover:bg-[#b91c1c]',
         outline:
           'border border-primary text-primary hover:bg-primary/90 hover:text-primary/80',
         secondary:
@@ -19,6 +19,7 @@ const buttonVariants = cva(
         black: 'bg-black text-white rounded-[14px] hover:bg-black/80',
         // no border variant
         noBorder: 'border-none bg-transparent text-[#CC5A88]',
+        cancel: 'bg-[#F0F0F0] text-[#3B3B3B3] hover:bg-gray-50 disabled:opacity-50',
       },
       size: {
         default: 'h-10 py-2 px-4',

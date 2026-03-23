@@ -16,6 +16,7 @@ import './signUp.css';
 import { useModal } from '@/components/Modal/ModalProvider';
 import { ModalId } from '@/Layout';
 import GoogleAuth from '../../GoogleAuth';
+import { AUTH } from '@/pages/auth/authPageStyles';
 
 const Register = () => {
   const dispatch = useAppDispatch();
@@ -127,29 +128,28 @@ const Register = () => {
   };
 
   return (
-    <main className="h-screen w-full !bg-[white]">
-      <div className="flex justify-between py-8 px-12">
+    <main className={`${AUTH.main} relative`}>
+      <div className={AUTH.headerBar}>
         <GoBack text="Back" className="!text-[#60983C]" />
-        <div className="flex items-center space-x-2">
-          <p className="text-[13px] text-[#344054]">Already have an account?</p>
+        <div className="flex items-center flex-wrap gap-1 justify-start sm:justify-end w-full sm:w-auto">
+          <p className="text-[13px] md:text-[14px] text-[#344054]">
+            Already have an account?
+          </p>
           <Button onClick={() => navigate('/auth/login')} variant={'noBorder'}>
             Log in
           </Button>
         </div>
       </div>
-      <div className=" px-4 mx-auto pb-2 max-w-[470px] flex flex-col items-center mt-[30px] xl:mt-[0px]">
-        <div className="space-y-2 flex justify-center flex-col items-center">
-          <Typography
-            variant="heading"
-            className="text-center !text-[2rem] font-medium font-[lora]"
-          >
+      <div className={`px-4 mx-auto pb-8 ${AUTH.columnWide} flex flex-col items-center mt-4 sm:mt-8 xl:mt-2`}>
+        <div className="space-y-2 flex justify-center flex-col items-center w-full">
+          <Typography variant="heading" className={AUTH.titleCenter}>
             Create an account
           </Typography>
         </div>
-        <form className="w-full py-10" onSubmit={handleSubmit}>
+        <form className={`w-full ${AUTH.formPad}`} onSubmit={handleSubmit}>
           <div>
-            <div className="flex justify-between gap-3">
-              <div className="flex-auto">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 min-w-0">
+              <div className="flex-auto min-w-0">
                 <Input
                   value={payload.firstName}
                   onChange={(e) => handleChange('firstName', e.target.value)}
@@ -159,7 +159,7 @@ const Register = () => {
                   required
                 />
               </div>
-              <div className="flex-auto">
+              <div className="flex-auto min-w-0">
                 <Input
                   value={payload.lastName}
                   onChange={(e) => handleChange('lastName', e.target.value)}
@@ -246,7 +246,7 @@ const Register = () => {
                   required
                 />
 
-                <p className="text-[12px] font-[lora] text-[#475367]">
+                <p className="text-[11px] sm:text-[12px] font-[lora] text-[#475367] leading-snug">
                   Please Accept Our{' '}
                   <span className="underline">Terms And Conditions</span> Before
                   Proceeding

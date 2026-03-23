@@ -19,7 +19,7 @@ interface ServiceCardProp {
 
 const ServiceCard = ({ item }: ServiceCardProp) => {
   return (
-    <div className="flex-shrink-0 w-[156px]">
+    <div className="snap-start shrink-0 w-[158px] sm:w-[168px] md:w-[180px]">
       <div className="relative">
         <img
           src={
@@ -27,7 +27,7 @@ const ServiceCard = ({ item }: ServiceCardProp) => {
             'https://media.istockphoto.com/id/1409329028/vector/no-picture-available-placeholder-thumbnail-icon-illustration-design.jpg?s=612x612&w=0&k=20&c=_zOuJu755g2eEUioiOUdz_mHKJQJn-tDgIAhQzyeKUQ='
           }
           alt={item?.name}
-          className="w-full h-[156px] object-cover rounded-lg"
+          className="w-full h-[120px] md:h-[132px] sm:h-[144px] md:h-[156px] object-cover rounded-lg"
         />
       </div>
       <div className="mt-2">
@@ -36,7 +36,7 @@ const ServiceCard = ({ item }: ServiceCardProp) => {
             {item.store.name}
           </p>
         )}
-        <h3 className="text-[14px] text-[#1D2739] font-medium mt-1">
+        <h3 className="text-[13px] md:text-[14px] text-[#1D2739] font-medium mt-1">
           {item?.name}
         </h3>
         {item?.store && item.store.rating > 0 && (

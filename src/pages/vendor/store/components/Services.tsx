@@ -1,38 +1,98 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/Buttons';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/redux/store';
+import { removeFromCart } from '@/redux/cart/cartSlice';
 import { useGetServicesQuery, useDeleteServiceMutation } from '@/redux/vendor';
 import { toast } from 'react-toastify';
 import ServiceDetailsDrawer from './ServiceDetailsDrawer';
 import BookingSummaryCard from './BookingSummaryCard';
-import {
-  addOrUpdateItem,
-  selectBookingState,
-  selectBookingTotals,
-} from '@/redux/booking/bookingSlice';
+import type { BookingItem } from '@/redux/booking/bookingSlice';
 
 interface ServicesProps {
   storeId: string;
   isReadOnly?: boolean;
 }
 
+function cartToBookingItems(cartItems: Array<{ service: any; quantity: number; selectedAddOns?: any[] }>): BookingItem[] {
+  return cartItems.map((item) => {
+    const addOns = (item.selectedAddOns || []).map((a: any) => ({
+      id: a._id || a.id,
+      name: a.name,
+      description: a.description,
+      price: a.price,
+      durationInMinutes: a.durationInMinutes ?? (a.duration ? a.duration.hours * 60 + (a.duration.minutes || 0) : 0),
+    }));
+    return {
+      serviceId: item.service.id,
+      name: item.service.name,
+      description: item.service.description,
+      pricingType: item.service.pricingType || 'fixed',
+      price: item.service.price || 0,
+      currency: item.service.currency || 'USD',
+      durationInMinutes: item.service.durationInMinutes || 0,
+      imageUrl: item.service.imageUrl,
+      addOns,
+      quantity: item.quantity,
+      availableTypes: item.service.type,
+    };
+  });
+}
+
 const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const store = useSelector((state: RootState) => state.vendorStore.store);
-  const booking = useSelector(selectBookingState);
-  const bookingTotals = useSelector(selectBookingTotals);
+  const cartItems = useSelector((state: RootState) => {
+    if (!storeId || !state.cart?.carts) return [];
+    return state.cart.carts[storeId] || [];
+  });
+
+  const bookingItems = useMemo(() => cartToBookingItems(cartItems), [cartItems]);
+  const bookingTotals = useMemo(() => {
+    const subTotal = cartItems.reduce((sum, item) => {
+      const itemPrice = item.service.pricingType === 'free' ? 0 : item.service.price;
+      const addOnsPrice = (item.selectedAddOns || []).reduce((s, a) => s + a.price, 0);
+      return sum + (itemPrice + addOnsPrice) * item.quantity;
+    }, 0);
+    const totalDuration = cartItems.reduce((sum, item) => {
+      const addOnsDur = (item.selectedAddOns || []).reduce((s, a) => {
+        return s + (a.duration ? a.duration.hours * 60 + a.duration.minutes : a.durationInMinutes || 0);
+      }, 0);
+      return sum + (item.service.durationInMinutes + addOnsDur) * item.quantity;
+    }, 0);
+    return {
+      subTotal,
+      deliveryFee: 0,
+      taxes: 0,
+      discount: 0,
+      total: subTotal,
+      totalDuration,
+    };
+  }, [cartItems]);
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState('');
+  const [openServiceMenu, setOpenServiceMenu] = useState<string | null>(null);
+  const serviceMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (serviceMenuRef.current && !serviceMenuRef.current.contains(e.target as Node)) {
+        setOpenServiceMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<any | null>(null);
 
   const { data, isLoading, refetch } = useGetServicesQuery({
     storeId,
     page,
-    limit: 10,
+    limit: 50,
     category,
   });
 
@@ -87,22 +147,17 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
     setSelectedService(service);
   };
 
-  const handleAddToBooking = (item: any) => {
-    dispatch(addOrUpdateItem(item));
-    toast.success('Service added to booking');
-  };
-
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4 min-w-0">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg p-4 animate-pulse">
-            <div className="flex space-x-4">
-              <div className="w-20 h-20 bg-gray-200 rounded-lg"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+          <div key={i} className="bg-white rounded-lg p-3 sm:p-4 animate-pulse">
+            <div className="flex flex-row gap-3 sm:gap-4 items-start">
+              <div className="w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 bg-gray-200 rounded-lg shrink-0" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-1/3 max-w-[8rem]" />
+                <div className="h-3 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-200 rounded w-1/4" />
               </div>
             </div>
           </div>
@@ -115,24 +170,37 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
   const meta = data?.meta;
   const categories = store?.preferredCategories || [];
 
+  const hasCart = cartItems.length > 0;
+
   return (
-    <div className="relative">
+    <div
+      className={`relative flex min-w-0 w-full flex-col gap-6 ${
+        hasCart
+          ? 'lg:flex-row lg:items-start lg:justify-between lg:gap-8 xl:gap-12'
+          : ''
+      }`}
+    >
       <div
-        className={
-          isReadOnly ? 'grid lg:grid-cols-[2fr_1fr] gap-6 items-start' : ''
-        }
+        className={`w-full min-w-0 max-w-[600px] ${
+          hasCart ? 'lg:mx-0 lg:shrink-0' : 'mx-auto'
+        }`}
       >
-        <div>
-          {/* Category Filter */}
+        <div className="min-w-0">
+          {/* Category Filter — full viewport width on mobile, horizontal scroll */}
           {categories.length > 0 && (
-            <div className="mb-6">
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+            <div className="mb-4 sm:mb-6 w-[100vw] max-w-[100vw] ml-[calc(50%-50vw)] sm:ml-0 sm:w-full sm:max-w-none">
+              <div
+                className="flex flex-nowrap gap-2 sm:gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide overscroll-x-contain pb-2 pt-0.5 snap-x snap-mandatory scroll-px-4 px-4 sm:scroll-px-0 sm:px-0 touch-pan-x"
+                role="tablist"
+                aria-label="Filter services by category"
+              >
                 <button
+                  type="button"
                   onClick={() => setCategory('')}
-                  className={`px-6 py-2 rounded-full whitespace-nowrap font-medium transition-colors ${
+                  className={`shrink-0 snap-start px-4 sm:px-6 h-8 sm:h-[32px] rounded-full whitespace-nowrap font-semibold text-xs sm:text-[13px] transition-colors touch-manipulation ${
                     category === ''
                       ? 'bg-black text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'text-[#6C6C6C] hover:bg-gray-200 active:bg-gray-200'
                   }`}
                 >
                   All
@@ -140,11 +208,12 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
                 {categories.map((cat) => (
                   <button
                     key={cat}
+                    type="button"
                     onClick={() => setCategory(cat)}
-                    className={`px-6 py-2 rounded-full whitespace-nowrap font-medium transition-colors ${
+                    className={`shrink-0 snap-start px-3 sm:px-4 h-8 sm:h-[32px] rounded-full font-semibold text-xs sm:text-[13px] whitespace-nowrap transition-colors touch-manipulation ${
                       category === cat
                         ? 'bg-black text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'text-[#6C6C6C] hover:bg-gray-200 active:bg-gray-200'
                     }`}
                   >
                     {cat}
@@ -156,11 +225,13 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
 
           {/* Services List */}
           {services.length === 0 ? (
-            <div className="bg-white rounded-lg p-12 text-center">
+            <div className="bg-white rounded-lg p-6 sm:p-10 md:p-12 text-center">
               {!isReadOnly && (
-                <div
-                  className="w-16 h-16 cursor-pointer rounded-full flex items-center justify-center mx-auto mb-4"
+                <button
+                  type="button"
+                  className="w-16 h-16 cursor-pointer rounded-full flex items-center justify-center mx-auto mb-4 touch-manipulation"
                   onClick={handleAddService}
+                  aria-label="Add service"
                 >
                   <svg
                     width="48"
@@ -178,33 +249,43 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
                       strokeLinejoin="round"
                     />
                   </svg>
-                </div>
+                </button>
               )}
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {isReadOnly ? 'No services available' : 'No services added yet'}
+              <h3 className="text-lg sm:text-[20px] font-bold text-gray-900 mb-2 font-[lora] tracking-tight px-1">
+                {isReadOnly ? 'Coming soon!' : 'No services added yet'}
               </h3>
-              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              <p className="text-[#6C6C6C] mb-6 max-w-[min(100%,300px)] mx-auto text-sm sm:text-[14px] font-medium px-2">
                 {isReadOnly
-                  ? 'This store has not added any services yet'
+                  ? 'Our services will be listed here once we’re up and running'
                   : 'Add your services to let customers know what you offer and start accepting bookings'}
               </p>
             </div>
           ) : (
             <>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4 min-w-0">
                 {services.map((service: any) => (
                   <div
                     key={service.id}
                     onClick={() => handleSelectService(service)}
-                    className={`bg-white rounded-lg p-4 transition-shadow ${
+                    role={isReadOnly ? 'button' : undefined}
+                    tabIndex={isReadOnly ? 0 : undefined}
+                    onKeyDown={
                       isReadOnly
-                        ? 'hover:shadow-md cursor-pointer'
-                        : 'hover:shadow-md'
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleSelectService(service);
+                            }
+                          }
+                        : undefined
+                    }
+                    className={`bg-white rounded-lg py-3 sm:p-4 w-full min-w-0 border border-transparent transition-shadow ${
+                      isReadOnly ? 'cursor-pointer hover:border-[#F0F0F0] hover:shadow-sm' : ''
                     }`}
                   >
-                    <div className="flex space-x-4">
+                    <div className="flex flex-row gap-3 sm:gap-4 items-start min-w-0">
                       {/* Service Image */}
-                      <div className="w-20 h-20 flex-shrink-0">
+                      <div className="w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 shrink-0 rounded-lg overflow-hidden bg-gray-100">
                         {service.imageUrl ? (
                           <img
                             src={service.imageUrl}
@@ -231,19 +312,19 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
                       </div>
 
                       {/* Service Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex justify-between items-start gap-2 min-w-0">
+                          <div className="flex-1 min-w-0 pr-1">
+                            <h3 className="text-sm sm:text-[15px] font-medium text-[#0A0A0A] mb-1 break-words">
                               {service.name}
                             </h3>
                             {service.description && (
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                              <p className="text-xs sm:text-[14px] text-[#6C6C6C] font-medium mb-2 line-clamp-2 break-words">
                                 {service.description}
                               </p>
                             )}
-                            <div className="flex flex-wrap items-center gap-4 text-sm">
-                              <span className="font-semibold text-gray-900">
+                            <div className="flex flex-wrap items-center justify-start gap-x-1 gap-y-0.5 text-xs sm:text-[14px]">
+                              <span className="font-semibold text-[#0A0A0A]">
                                 {service.pricingType === 'free'
                                   ? 'Free'
                                   : service.pricingType === 'from'
@@ -256,10 +337,11 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
                                       service.currency
                                     )}
                               </span>
-                              <span className="text-gray-500">
+                              .
+                              <span className="text-[#6C6C6C] text-[14px] font-medium">
                                 {formatDuration(service.durationInMinutes)}
                               </span>
-                              {!isReadOnly && (
+                              {/* {!isReadOnly && (
                                 <span
                                   className={`px-2 py-1 rounded-full text-xs ${
                                     service.status === 'approved'
@@ -272,66 +354,73 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
                                   {service.status.charAt(0).toUpperCase() +
                                     service.status.slice(1)}
                                 </span>
-                              )}
+                              )} */}
                             </div>
                           </div>
 
                           {/* Actions */}
                           {!isReadOnly ? (
-                            <div className="flex items-center space-x-2 ml-4">
+                            <div
+                              className="relative ml-0 sm:ml-3 shrink-0 self-start"
+                              ref={openServiceMenu === service.id ? serviceMenuRef : null}
+                            >
                               <button
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleEditService(service);
+                                  setOpenServiceMenu(openServiceMenu === service.id ? null : service.id);
                                 }}
-                                className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
-                                title="Edit service"
+                                className="p-2 rounded-full hover:bg-gray-100 touch-manipulation"
+                                aria-label="Service options"
+                                aria-expanded={openServiceMenu === service.id}
                               >
-                                <svg
-                                  className="w-5 h-5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                  />
+                                <svg className="w-5 h-5 text-[#6C6C6C]" fill="currentColor" viewBox="0 0 24 24">
+                                  <circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" />
                                 </svg>
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setServiceToDelete(service.id);
-                                }}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-md"
-                                title="Delete service"
-                              >
-                                <svg
-                                  className="w-5 h-5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                  />
-                                </svg>
-                              </button>
+
+                              {openServiceMenu === service.id && (
+                                <div className="absolute right-0 sm:right-0 left-auto top-full mt-1 w-[min(100vw-2rem,10rem)] sm:w-40 bg-white rounded-xl shadow-lg z-20 overflow-hidden border border-[#F0F0F0]">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenServiceMenu(null);
+                                      handleEditService(service);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-[14px] font-medium text-[#101828] hover:bg-gray-50"
+                                  >
+                                    <svg className="w-4 h-4 text-[#6C6C6C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenServiceMenu(null);
+                                      setServiceToDelete(service.id);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-[14px] font-medium text-[#D92D20] hover:bg-red-50"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           ) : (
-                            <div className="ml-3 text-gray-400">
+                            <div className="ml-0 sm:ml-3 text-gray-400 shrink-0 scale-[0.85] sm:scale-75 cursor-pointer self-start">
                               <svg
                                 width="40"
                                 height="40"
                                 viewBox="0 0 40 40"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
+                                aria-hidden
                               >
                                 <rect
                                   width="40"
@@ -342,16 +431,16 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
                                 <path
                                   d="M26.6673 20L13.334 20"
                                   stroke="#3B3B3B"
-                                  stroke-width="1.8"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
+                                  strokeWidth={1.8}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
                                 />
                                 <path
                                   d="M22.5 24.1673C22.5 24.1673 26.6667 21.0986 26.6667 20.0006C26.6667 18.9026 22.5 15.834 22.5 15.834"
                                   stroke="#3B3B3B"
-                                  stroke-width="1.8"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
+                                  strokeWidth={1.8}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
                                 />
                               </svg>
                             </div>
@@ -365,21 +454,23 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
 
               {/* Pagination */}
               {meta && meta.totalPages > 1 && (
-                <div className="flex justify-center items-center space-x-2 mt-6">
+                <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3 mt-6 px-1">
                   <button
+                    type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={!meta.hasPrevPage}
-                    className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 sm:px-4 py-2 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 touch-manipulation"
                   >
                     Previous
                   </button>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs sm:text-sm text-gray-600 px-1">
                     Page {meta.page} of {meta.totalPages}
                   </span>
                   <button
+                    type="button"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!meta.hasNextPage}
-                    className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 sm:px-4 py-2 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 touch-manipulation"
                   >
                     Next
                   </button>
@@ -388,50 +479,41 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
             </>
           )}
         </div>
-
-        {isReadOnly && (
-          <div className="hidden lg:block">
-            <BookingSummaryCard
-              store={store || undefined}
-              items={booking.items}
-              totals={bookingTotals}
-              currency={booking.items[0]?.currency || 'USD'}
-              onBookNow={() => navigate('/booking/create')}
-              showBreakdown={false}
-              showCTA
-            />
-          </div>
-        )}
       </div>
+      {hasCart && (
+        <div className="w-full min-w-0 lg:w-[min(100%,24rem)] lg:max-w-sm lg:shrink-0">
+          <BookingSummaryCard
+            store={store || undefined}
+            items={bookingItems}
+            totals={bookingTotals}
+            currency={cartItems[0]?.service?.currency || 'USD'}
+            onBookNow={() => navigate(`/store/${storeId}/booking/create`)}
+            showBreakdown={false}
+            showCTA
+            onRemoveItem={(serviceId) => dispatch(removeFromCart({ storeId, serviceId }))}
+          />
+        </div>
+      )}
 
       {isReadOnly && (
         <>
           <ServiceDetailsDrawer
             service={selectedService}
+            storeId={storeId}
             isOpen={!!selectedService}
             onClose={() => setSelectedService(null)}
-            onAdd={handleAddToBooking}
           />
-          <div className="lg:hidden mt-6">
-            <BookingSummaryCard
-              store={store || undefined}
-              items={booking.items}
-              totals={bookingTotals}
-              currency={booking.items[0]?.currency || 'USD'}
-              onBookNow={() => navigate('/booking/create')}
-              showBreakdown={false}
-              showCTA
-            />
-          </div>
         </>
       )}
 
       {/* Floating Add Button */}
       {!isReadOnly && (
         <button
+          type="button"
           onClick={handleAddService}
-          className="fixed bottom-8 right-8 w-14 h-14 bg-[#4C9A2A] hover:bg-[#3d7a22] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-30"
+          className="fixed bottom-[max(1rem,env(safe-area-inset-bottom,0px))] right-4 sm:bottom-8 sm:right-8 w-12 h-12 sm:w-14 sm:h-14 bg-[#4C9A2A] hover:bg-[#3d7a22] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-30 touch-manipulation"
           title="Add service"
+          aria-label="Add service"
         >
           <svg
             className="w-6 h-6"
@@ -451,30 +533,25 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
 
       {/* Delete Confirmation Modal */}
       {serviceToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
+            <h3 className="text-[17px] font-bold text-[#101828] font-[lora] tracking-tight mb-2">
               Delete Service
             </h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this service? This action cannot
-              be undone.
+            <p className="text-[14px] text-[#6C6C6C] font-medium mb-6">
+              Are you sure you want to delete this service? This action cannot be undone.
             </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setServiceToDelete(null)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteService}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Button variant="cancel" size="full" onClick={() => setServiceToDelete(null)} disabled={isDeleting}>
+                  Cancel
+                </Button>
+              </div>
+              <div className="flex-1">
+                <Button variant="destructive" size="full" onClick={handleDeleteService} loading={isDeleting}>
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         </div>

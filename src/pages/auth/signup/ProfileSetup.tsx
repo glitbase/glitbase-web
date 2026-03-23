@@ -6,10 +6,9 @@ import { Button } from '@/components/Buttons';
 import { Typography } from '@/components/Typography';
 import { Input } from '@/components/Inputs/TextInput';
 import { PasswordInput } from '@/components/Inputs/PasswordInput';
-import { GoBack } from '@/components/GoBack';
 import {
-  CountryDropdown,
   Country,
+  CountryDropdown,
   countries,
 } from '@/components/auth/CountryDropdown';
 import {
@@ -24,6 +23,8 @@ import {
 import { useAppDispatch, useAppSelector } from '@/hooks/redux-hooks';
 import { setTokens, selectHasTokens } from '@/redux/auth/authSlice';
 import { toast } from 'react-toastify';
+import ProgressBar from '@/components/ProgressBar';
+import { AUTH } from '@/pages/auth/authPageStyles';
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
@@ -97,9 +98,10 @@ const ProfileSetup = () => {
   }, [hasTokens, profileData, shouldSkipToNextStep, navigate]);
 
   // Initialize form state
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<any>({});
@@ -110,10 +112,6 @@ const ProfileSetup = () => {
     if (profileData?.data?.user) {
       const user = profileData.data.user;
 
-      // Prefill name if available from API
-      if (user.firstName && user.lastName) {
-        setFullName(`${user.firstName} ${user.lastName}`);
-      }
 
       // Prefill phone number if available from API
       if (user.phoneNumber) {
@@ -136,9 +134,12 @@ const ProfileSetup = () => {
     useCompleteProfileMutation();
   const [login, { isLoading: isLoggingIn }] = useLoginMutation();
 
-  const validateFullName = (name: string): boolean => {
-    const nameParts = name.trim().split(' ');
-    return nameParts.length >= 2 && !!nameParts[0] && !!nameParts[1];
+  const validateFirstName = (firstName: string): boolean => {
+    return firstName.trim().length > 0;
+  };
+
+  const validateLastName = (lastName: string): boolean => {
+    return lastName.trim().length > 0;
   };
 
   const validatePhoneNumber = (phone: string): boolean => {
@@ -152,8 +153,12 @@ const ProfileSetup = () => {
   useEffect(() => {
     const newErrors: any = {};
 
-    if (touched.includes('fullName') && !validateFullName(fullName)) {
-      newErrors.fullName = 'Please enter both first and last name';
+    if (touched.includes('firstName') && !validateFirstName(firstName)) {
+      newErrors.firstName = 'Please enter your first name';
+    }
+
+    if (touched.includes('lastName') && !validateLastName(lastName)) {
+      newErrors.lastName = 'Please enter your last name';
     }
 
     if (touched.includes('phoneNumber') && !validatePhoneNumber(phoneNumber)) {
@@ -170,7 +175,8 @@ const ProfileSetup = () => {
 
     setErrors(newErrors);
   }, [
-    fullName,
+    firstName,
+    lastName,
     phoneNumber,
     password,
     confirmPassword,
@@ -186,7 +192,9 @@ const ProfileSetup = () => {
 
   const isFormValid = () => {
     return (
-      validateFullName(fullName) &&
+      validateFirstName(firstName) &&
+      validateLastName(lastName) &&
+      selectedCountry !== null &&
       validatePhoneNumber(phoneNumber) &&
       isPasswordValid(password) &&
       validatePasswordMatch() &&
@@ -214,14 +222,9 @@ const ProfileSetup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid()) return;
+    if (!isFormValid() || !selectedCountry) return;
 
     try {
-      // Split full name into first and last name
-      const nameParts = fullName.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
       // Complete profile
       await completeProfile({
         firstName,
@@ -263,8 +266,8 @@ const ProfileSetup = () => {
   if (shouldSkipToNextStep) {
     console.log('Rendering skip state');
     return (
-      <main className="h-screen w-full !bg-[white] overflow-y-auto">
-        <div className="flex flex-col justify-center items-center h-full">
+      <main className={`${AUTH.mainScroll} justify-center`}>
+        <div className="flex flex-col justify-center items-center min-h-[50vh] flex-1 py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CC5A88]"></div>
           <p className="mt-3 text-gray-600">
             Profile already completed. Redirecting to next step...
@@ -275,158 +278,156 @@ const ProfileSetup = () => {
   }
 
   return (
-    <main className="h-screen w-full !bg-[white] overflow-y-auto">
+    <main className={`${AUTH.mainScroll} justify-center`}>
       {isLoading ? (
-        <div className="flex flex-col justify-center items-center h-full">
+        <div className="flex flex-col justify-center items-center min-h-[50vh] flex-1 py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CC5A88]"></div>
           <p className="mt-3 text-gray-600">Loading profile data...</p>
         </div>
       ) : (
-        <>
-          <div className="flex justify-between py-8 px-12">
-            <GoBack text="Back" className="!text-[#60983C]" />
+        <div className={`px-4 mx-auto pb-8 ${AUTH.columnWide} flex flex-col items-center w-full`}>
+          {/* Progress indicator */}
+          <div className="w-full mb-6">
+            <p className="text-[#CC5A88] text-[14px] font-semibold mb-3">
+              {userType === 'vendor' ? 'Step 2 of 8' : 'Step 1 of 2'}
+            </p>
+            <ProgressBar value={50} />
           </div>
 
-          <div className="px-4 mx-auto pb-8 max-w-[470px] flex flex-col items-center">
-            {/* Progress indicator */}
-            <div className="w-full mb-6">
-              <p className="text-[#CC5A88] text-sm font-semibold mb-2">
-                {userType === 'vendor' ? 'Step 2 of 8' : 'Step 1 of 2'}
-              </p>
-              <div className="w-full bg-gray-200 rounded-full h-1">
+          <div className="space-y-2 flex justify-center flex-col items-start w-full">
+            <Typography variant="heading" className={`${AUTH.title} w-full`}>
+              Complete your account
+            </Typography>
+            <p className={`${AUTH.subtitle} leading-[1.35] w-full`}>
+              Add your personal details and create a secure password to set up your account
+            </p>
+          </div>
+
+          <form className="w-full mt-8" onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    onBlur={() => handleBlur('firstName')}
+                    error={errors.firstName}
+                    label="First name"
+                    placeholder="Enter first name"
+                    required
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    onBlur={() => handleBlur('lastName')}
+                    error={errors.lastName}
+                    label="Last name"
+                    placeholder="Enter last name"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* <div>
+                <Input
+                  value={email}
+                  label="Email address"
+                  placeholder="Email address"
+                  type="email"
+                  disabled
+                  className="bg-gray-100"
+                />
+              </div> */}
+
+              <div>
+                <CountryDropdown
+                  selectedCountry={selectedCountry}
+                  onSelectCountry={setSelectedCountry}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone number
+                </label>
                 <div
-                  className="bg-[#CC5A88] h-1 rounded-full"
-                  style={{ width: userType === 'vendor' ? '25%' : '50%' }}
+                  className={`flex items-center h-[50px] rounded-md bg-[#FAFAFA] rounded-lg focus-within:border-transparent focus-within:ring-0 focus-within:ring-transparent ${
+                    errors.phoneNumber ? 'border-red-500' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2 px-3 py-2 border-r border-gray-200 bg-gray-50">
+                    <img src={selectedCountry?.flag} alt={selectedCountry?.name} className="w-5 h-5" />
+                    <span className="text-sm text-[#3B3B3B] font-medium">
+                      {selectedCountry?.dialCode}
+                    </span>
+                  </div>
+                  <Input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      setPhoneNumber(value);
+                      if (!touched.includes('phoneNumber')) {
+                        setTouched([...touched, 'phoneNumber']);
+                      }
+                    }}
+                    onBlur={() => handleBlur('phoneNumber')}
+                    placeholder="Phone Number"
+                    maxLength={11}
+                    className="flex-1 px-3 py-2 border-none focus:ring-0 focus:outline-none"
+                  />
+                </div>
+                {errors.phoneNumber && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.phoneNumber}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <PasswordInput
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => handleBlur('password')}
+                  error={errors.password}
+                  label="Password"
+                  placeholder="Password"
+                  required
+                />
+                <PasswordRequirements password={password} />
+              </div>
+
+              <div>
+                <PasswordInput
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onBlur={() => handleBlur('confirmPassword')}
+                  error={errors.confirmPassword}
+                  label="Confirm password"
+                  placeholder="Confirm password"
+                  required
                 />
               </div>
             </div>
 
-            <div className="space-y-2 flex justify-center flex-col items-start w-full">
-              <Typography
-                variant="heading"
-                className="text-left !text-[2rem] font-medium font-[lora]"
+            <div className="mt-8">
+              <Button
+                variant="default"
+                size="full"
+                loading={isCompletingProfile || isLoggingIn}
+                disabled={
+                  !isFormValid() || isCompletingProfile || isLoggingIn
+                }
+                type="submit"
+                className="bg-[#60983C] hover:bg-[#4d7a30]"
               >
-                Complete your account
-              </Typography>
-              <p className="text-left font-medium text-[1rem] text-[#667185] !mt-3">
-                Add your personal details and create a secure password to set up
-                your account
-              </p>
+                Continue
+              </Button>
             </div>
-
-            <form className="w-full py-10" onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <Input
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    onBlur={() => handleBlur('fullName')}
-                    error={errors.fullName}
-                    label="Full name"
-                    placeholder="First & last name"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Input
-                    value={email}
-                    label="Email address"
-                    placeholder="Email address"
-                    type="email"
-                    disabled
-                    className="bg-gray-100"
-                  />
-                </div>
-
-                <div>
-                  <CountryDropdown
-                    selectedCountry={selectedCountry}
-                    onSelectCountry={setSelectedCountry}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone number
-                  </label>
-                  <div
-                    className={`flex items-center border rounded-md shadow-sm focus-within:border-indigo-300 focus-within:ring focus-within:ring-indigo-200 focus-within:ring-opacity-50 ${
-                      errors.phoneNumber ? 'border-red-500' : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 px-3 py-2 border-r border-gray-200 bg-gray-50">
-                      <span className="text-lg">{selectedCountry.flag}</span>
-                      <span className="text-sm text-gray-700">
-                        {selectedCountry.dialCode}
-                      </span>
-                    </div>
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        setPhoneNumber(value);
-                        if (!touched.includes('phoneNumber')) {
-                          setTouched([...touched, 'phoneNumber']);
-                        }
-                      }}
-                      onBlur={() => handleBlur('phoneNumber')}
-                      placeholder="Phone Number"
-                      maxLength={11}
-                      className="flex-1 px-3 py-2 border-none focus:ring-0 focus:outline-none"
-                    />
-                  </div>
-                  {errors.phoneNumber && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {errors.phoneNumber}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <PasswordInput
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => handleBlur('password')}
-                    error={errors.password}
-                    label="Password"
-                    placeholder="Password"
-                    required
-                  />
-                  <PasswordRequirements password={password} />
-                </div>
-
-                <div>
-                  <PasswordInput
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    onBlur={() => handleBlur('confirmPassword')}
-                    error={errors.confirmPassword}
-                    label="Confirm password"
-                    placeholder="Password"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <Button
-                  variant="default"
-                  size="full"
-                  loading={isCompletingProfile || isLoggingIn}
-                  disabled={
-                    !isFormValid() || isCompletingProfile || isLoggingIn
-                  }
-                  type="submit"
-                  className="bg-[#60983C] hover:bg-[#4d7a30]"
-                >
-                  Continue
-                </Button>
-              </div>
-            </form>
-          </div>
-        </>
+          </form>
+        </div>
       )}
     </main>
   );

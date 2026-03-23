@@ -1,3 +1,5 @@
+import { Button } from '@/components/Buttons';
+import { Textarea } from '@/components/Inputs/TextAreaInput';
 import { useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 
@@ -31,7 +33,7 @@ const FeedbackModal = ({ isOpen, onClose, onProceed }: FeedbackModalProps) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-[20px] max-w-[500px] w-full mx-4 p-8 relative">
+      <div className="bg-white rounded-[20px] max-w-[500px] w-full mx-4 p-6 md:p-8 relative">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -41,17 +43,17 @@ const FeedbackModal = ({ isOpen, onClose, onProceed }: FeedbackModalProps) => {
         </button>
 
         {/* Title */}
-        <h2 className="text-[28px] font-semibold text-[#101828] mb-3">
+        <h2 className="text-[18px] md:text-[24px] font-semibold text-[#101828] mb-1 font-[lora] tracking-tight">
           Tell us what went wrong
         </h2>
 
         {/* Subtitle */}
-        <p className="text-[14px] text-[#6C6C6C] mb-6">
+        <p className="text-[13px] md:text-[15px] text-[#6C6C6C] font-medium mb-6">
           Let us know why you're leaving - your feedback helps us do better
         </p>
 
         {/* Radio options */}
-        <div className="space-y-3 mb-6">
+        <div className="space-y-5 mb-6">
           {reasons.map((reason) => (
             <label
               key={reason}
@@ -64,10 +66,10 @@ const FeedbackModal = ({ isOpen, onClose, onProceed }: FeedbackModalProps) => {
                   value={reason}
                   checked={selectedReason === reason}
                   onChange={(e) => setSelectedReason(e.target.value)}
-                  className="appearance-none w-5 h-5 border-2 border-gray-300 rounded-full checked:border-[#E11D48] checked:border-[6px] focus:outline-none cursor-pointer"
+                  className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:border-[#E11D48] checked:border-[6px] focus:outline-none cursor-pointer"
                 />
               </div>
-              <span className="text-[16px] text-[#344054]">{reason}</span>
+              <span className="text-[13px] md:text-[15px] text-[#0A0A0A] font-medium">{reason}</span>
             </label>
           ))}
         </div>
@@ -75,23 +77,19 @@ const FeedbackModal = ({ isOpen, onClose, onProceed }: FeedbackModalProps) => {
         {/* Other textarea */}
         {selectedReason === 'Other' && (
           <div className="mb-6">
-            <textarea
+            <Textarea 
               value={otherFeedback}
               onChange={(e) => setOtherFeedback(e.target.value)}
               placeholder="Tell us about your experience (optional)"
-              className="w-full h-24 px-4 py-3 text-[14px] border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#E11D48] focus:border-transparent"
+              className=""
             />
           </div>
         )}
 
         {/* Proceed button */}
-        <button
-          onClick={handleProceed}
-          disabled={!selectedReason}
-          className="w-full px-4 py-3 text-[16px] font-medium text-white bg-[#D92D20] rounded-lg hover:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <Button variant="destructive" className='w-full' onClick={handleProceed} disabled={!selectedReason}>
           Proceed to deletion
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ const PageLoader = ({ className }: PageLoaderProps) => {
       <div
         className={`flex items-center space-x-2 relative py-6 animate-pulse ${className}`}
       >
-        <img src={logo} className="transform scale-[1.5]" />
+        <img src={logo} className="transform scale-[1.3]" />
       </div>
     </div>
   );

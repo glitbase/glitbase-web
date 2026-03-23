@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import HomeLayout from '@/layout/home/HomeLayout';
+import { Input } from '@/components/Inputs/TextInput';
+import { Button } from '@/components/Buttons';
 import { useGetMyStoreQuery, useUpdateStoreMutation } from '@/redux/vendor';
 
 const GiftfinderTags = () => {
@@ -13,128 +16,112 @@ const GiftfinderTags = () => {
   const [inputValue, setInputValue] = useState('');
   const [tags, setTags] = useState<string[]>([]);
 
-  // Load existing tags
   useEffect(() => {
-    if (store?.tags) {
-      setTags(store.tags);
-    }
+    if (store?.tags) setTags(store.tags);
   }, [store]);
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && inputValue.trim()) {
       e.preventDefault();
       const newTag = inputValue.trim().toLowerCase();
-
-      if (tags.includes(newTag)) {
-        toast.error('This tag already exists');
-        return;
-      }
-
+      if (tags.includes(newTag)) { toast.error('This tag already exists'); return; }
       setTags([...tags, newTag]);
       setInputValue('');
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
+  const handleRemoveTag = (tagToRemove: string) =>
     setTags(tags.filter((tag) => tag !== tagToRemove));
-  };
 
   const handleSave = async () => {
     try {
-      await updateStore({
-        storeId: store.id,
-        tags: tags,
-      }).unwrap();
-
+      await updateStore({ storeId: store.id, tags }).unwrap();
       toast.success('Tags updated successfully');
       refetch();
-    } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to update tags');
+    } catch (error) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || 'Failed to update tags');
     }
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-[600px] mx-auto px-4 py-6">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-[14px] text-[#667085] mb-6">
-          <button
-            onClick={() => navigate('/settings')}
-            className="hover:text-[#101828]"
-          >
-            Settings
-          </button>
-          <span>/</span>
-          <button
-            onClick={() =>
-              navigate('/settings', { state: { tab: 'operations' } })
-            }
-            className="hover:text-[#101828]"
-          >
-            Operations
-          </button>
-          <span>/</span>
-          <span className="text-[#101828]">Giftfinder & giftmatch tags</span>
-        </div>
-
-        {/* Header */}
-        <h1 className="text-[28px] font-semibold text-[#101828] mb-2">
-          Giftfinder & giftmatch tags
-        </h1>
-
-        {/* Form */}
-        <div className="space-y-6 mt-8">
-          {/* Gift Tag Input */}
-          <div>
-            <label className="block text-[14px] font-medium text-[#344054] mb-2">
-              Gift tag
-            </label>
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleAddTag}
-              placeholder="Add gift tags"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-[14px]"
-            />
-            <p className="mt-2 text-[12px] text-[#667085]">
-              Press Enter to add a tag
-            </p>
+    <HomeLayout isLoading={false} showNavBar={false}>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-[500px] px-6 py-8">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-[14px] mb-6">
+            <button
+              onClick={() => navigate('/settings')}
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
+            >
+              Settings
+            </button>
+            <span className="text-[#6C6C6C]">/</span>
+            <button
+              onClick={() => navigate('/settings', { state: { tab: 'operations' } })}
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
+            >
+              Operations
+            </button>
+            <span className="text-[#6C6C6C]">/</span>
+            <span className="text-[#101828] font-medium">Giftfinder tags</span>
           </div>
 
-          {/* Tags Display */}
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <div
-                  key={tag}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-full flex items-center gap-2"
-                >
-                  <span className="text-[14px] text-[#101828]">{tag}</span>
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Title */}
+          <h1 className="text-[23px] font-bold text-[#0A0A0A] mb-8 tracking-tight font-[lora]">
+            Giftfinder & giftmatch tags
+          </h1>
 
-          {/* Save Button */}
-          <div className="mt-8">
-            <button
+          <div className="space-y-7">
+            {/* Tag input */}
+            <div>
+              <Input
+                label="Gift tag"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleAddTag}
+                placeholder="Add gift tags"
+              />
+              <p className="mt-2 text-[13px] text-[#6C6C6C] font-medium">
+                Press Enter to add a tag
+              </p>
+            </div>
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <div
+                    key={tag}
+                    className="px-4 py-2 bg-[#FAFAFA] rounded-full flex items-center gap-2"
+                  >
+                    <span className="text-[14px] font-medium text-[#101828]">{tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="text-[#9D9D9D] hover:text-[#344054] text-lg leading-none"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Save */}
+            <Button
               onClick={handleSave}
               disabled={isLoading}
-              className="w-full px-4 py-3 text-[16px] font-medium text-white bg-[#3D7B22] rounded-full hover:bg-[#2d5c19] disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="default"
+              size="full"
+              loading={isLoading}
             >
-              {isLoading ? 'Saving...' : 'Save changes'}
-            </button>
+              Save changes
+            </Button>
           </div>
         </div>
       </div>
-    </div>
+    </HomeLayout>
   );
 };
 

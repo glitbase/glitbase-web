@@ -114,7 +114,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
         <Input
           type="text"
           placeholder="Search"
-          className="pl-10 pr-10 py-2 rounded-[50px] border border-gray-300 w-full focus:outline-none focus:ring-2 focus:ring-[#B73F79] focus:border-transparent"
+          className="pl-10 pr-10 py-2 !rounded-xl w-full focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent"
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
@@ -124,11 +124,11 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
           onKeyDown={handleInputKeyDown}
         />
         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-          <IoSearchOutline size={18} />
+          <IoSearchOutline size={18} color='#3B3B3B' />
         </div>
         {searchTerm && (
           <button
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 bg-[#0A0A0A14] rounded-full p-1 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             onClick={clearSearch}
           >
             <IoClose size={18} />
@@ -137,17 +137,17 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
       </div>
 
       {showDropdown && (
-        <div className="absolute top-[56px] left-0 right-0 mt-2 bg-white rounded-b-[20px] w-[230px] md:w-[fit-content] lg:w-[fit-content] shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-[56px] left-0 right-0 mt-2 px-4 py-6 bg-white rounded-2xl w-full min-w-full shadow-lg z-50 max-h-96 overflow-y-auto">
           {/* Live suggestions from fuzzy search */}
           {searchTerm && suggestions.length > 0 && (
-            <div className="p-6">
-              <p className="text-[20px] font-[lora] font-medium text-black px-3 py-2">
+            <div className="w-full min-w-0">
+              <p className="font-medium text-black">
                 Searching "{searchTerm}"
               </p>
               {suggestions.map((suggestion, index: number) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer rounded-md"
+                  className="flex items-center justify-between w-full px-3 py-2 hover:bg-gray-100 cursor-pointer rounded-md"
                   onClick={() => handleSuggestionClick(suggestion.name)}
                 >
                   <div className="flex items-center">
@@ -157,11 +157,11 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
                       alt="Search icon"
                     />
                     <div className="flex flex-col">
-                      <span className="text-[16px] font-[raleway] capitalize">
+                      <span className="text-[14px] font-medium font-[lora] capitalize">
                         {suggestion.name}
                       </span>
                       {suggestion.category && (
-                        <span className="text-[12px] text-gray-500 capitalize">
+                        <span className="text-[12px] font-medium text-gray-500 capitalize">
                           {suggestion.category}
                         </span>
                       )}
@@ -169,7 +169,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
                   </div>
                   <img
                     src={View}
-                    className="w-[15px] mt-1 h-[15px] cursor-pointer"
+                    className="w-[12px] mt-1 cursor-pointer"
                     alt="View icon"
                   />
                 </div>
@@ -179,16 +179,16 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
 
           {/* Trending Searches - shown when no search term */}
           {!searchTerm && recentSearches.length === 0 && (
-            <div className="p-6">
-              <p className="text-[20px] font-[lora] font-medium text-black px-3 py-2 mb-3">
+            <div>
+              <p className="font-medium text-primary-text mb-4">
                 Trending Searches
               </p>
-              <div className="flex flex-wrap gap-2 px-3">
+              <div className="flex flex-wrap gap-2">
                 {getTrendingSearches().map((term, index) => (
                   <button
                     key={index}
                     onClick={() => handleSuggestionClick(term)}
-                    className="px-4 py-2 bg-[#F5F5F5] hover:bg-[#E8E8E8] rounded-full text-[14px] font-medium text-[#1D2739] transition-colors"
+                    className="px-4 py-2 bg-[#F5F5F5] hover:bg-[#E8E8E8] rounded-full text-[14px] font-medium text-[#3B3B3B] transition-colors"
                   >
                     {term}
                   </button>
@@ -199,14 +199,14 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
 
           {/* Recent searches */}
           {!searchTerm && recentSearches.length > 0 && (
-            <div className="p-6">
-              <p className="text-[20px] font-[lora] font-medium text-black px-3 py-2">
+            <div>
+              <p className="font-medium text-primary-text mb-4">
                 Recent searches
               </p>
               {recentSearches.map((term, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer rounded-md"
+                  className="flex items-center justify-between w-full px-3 py-2 hover:bg-gray-100 cursor-pointer rounded-md"
                   onClick={() => handleSuggestionClick(term)}
                 >
                   <div className="flex items-center">
@@ -215,7 +215,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ onSearch }) => {
                       className="w-[20px] mt-1 mr-2 h-[20px] cursor-pointer"
                       alt="Search icon"
                     />
-                    <span className="text-[16px] font-[raleway]">{term}</span>
+                    <span className="text-[14px] font-medium font-[lora]">{term}</span>
                   </div>
                   <img
                     src={View}

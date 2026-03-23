@@ -45,10 +45,7 @@ const About = ({ store, isReadOnly = false }: AboutProps) => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Location */}
       {store.location && (
-        <div className="bg-white rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">Location</h2>
-          </div>
+        <div className="bg-white rounded-lg">
 
           {/* Map */}
           {store.location.geoPoint?.coordinates && (
@@ -69,7 +66,7 @@ const About = ({ store, isReadOnly = false }: AboutProps) => {
           <div className="my-4 flex justify-between items-center">
             <div className="flex items-start">
               <svg
-                className="w-5 h-5 text-gray-400 mt-0.5 mr-2 flex-shrink-0"
+                className="w-5 h-5 text-[#0A0A0A] mt-0.5 mr-2 flex-shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -88,14 +85,11 @@ const About = ({ store, isReadOnly = false }: AboutProps) => {
                 />
               </svg>
               <div>
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-[#0A0A0A] text-[14px]">
                   {store.location.name || store.location.address}
                 </p>
-                <p className="text-gray-600 text-sm">
-                  {store.location.address}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {store.location.city}, {store.location.state}{' '}
+                <p className="text-[#6C6C6C] text-[14px] font-medium">
+                  {store.location.address}, {store.location.city}, {store.location.state}{' '}
                   {store.location.zipcode}
                 </p>
               </div>
@@ -126,9 +120,9 @@ const About = ({ store, isReadOnly = false }: AboutProps) => {
       )}
 
       {/* Opening Hours */}
-      <div className="bg-white rounded-lg p-6">
+      <div className="bg-white rounded-lg">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Opening Hours</h2>
+          <h2 className="text-[16px] font-semibold text-[#0A0A0A] mt-4">Opening Hours</h2>
           {!isReadOnly && (
             <button
               onClick={() => navigate('/vendor/store/edit-opening-hours')}
@@ -157,13 +151,13 @@ const About = ({ store, isReadOnly = false }: AboutProps) => {
               key={oh.day}
               className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
             >
-              <span className="font-medium text-gray-900">{oh.day}</span>
+              <span className="font-medium text-[#0A0A0A] text-[14px]">{oh.day}</span>
               {oh.isOpen ? (
-                <span className="text-gray-700">
+                <span className="text-[#6C6C6C] text-[14px] font-medium">
                   {formatTime(oh.openingTime)} - {formatTime(oh.closingTime)}
                 </span>
               ) : (
-                <span className="text-gray-500">Closed</span>
+                <span className="text-[#6C6C6C] text-[14px] font-medium">Closed</span>
               )}
             </div>
           ))}

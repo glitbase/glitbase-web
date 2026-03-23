@@ -2,6 +2,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '../configure';
 import { setAuthenticated, setUnauthenticated, setUser } from './authSlice';
+import { notificationsApi } from '../notifications';
 
 export const authApi = createApi({
   reducerPath: 'authApi',
@@ -103,7 +104,7 @@ export const authApi = createApi({
         try {
           await queryFulfilled;
           dispatch(setUnauthenticated());
-          // Reset the entire auth API cache on logout
+          dispatch(notificationsApi.util.resetApiState());
           dispatch(authApi.util.resetApiState());
         } catch {
           /* empty */

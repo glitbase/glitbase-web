@@ -12,6 +12,7 @@ import Logo from "@/assets/images/logo.svg";
 import { setUser, setAuthenticated, setTokens } from "@/redux/auth/authSlice";
 import "./index.css";
 import PageLoader from "@/PageLoader";
+import { AUTH } from "@/pages/auth/authPageStyles";
 
 const AddRole = () => {
   const dispatch = useAppDispatch();
@@ -54,8 +55,8 @@ const AddRole = () => {
       dispatch(setTokens(data.tokens));
       toast.success("Role successfully added!");
       window.location.href = '/'
-    } catch (error: any) {
-      handleError(error?.data);
+    } catch (error: unknown) {
+      handleError((error as { data?: unknown })?.data);
     }
   };
 
@@ -69,22 +70,22 @@ const AddRole = () => {
 
   return (
     <ProtectedRouteProvider isLoading={isFetching}>
-      <main className="h-screen w-full !bg-[white]">
-        <div className="flex justify-between py-8 px-12">
+      <main className={AUTH.mainScroll}>
+        <div className="flex justify-between py-6 sm:py-8 px-4 sm:px-8 md:px-12">
           <GoBack text="Back" className="!text-[#60983C]" />
         </div>
-        <div className="px-4 mx-auto pb-2 max-w-[470px] h-fit flex flex-col items-center mt-[10px] xl:mt-[10px]">
-          <div className="space-y-2 flex justify-center flex-col items-center">
-            <img src={Logo} alt="logo" />
+        <div className={`px-4 mx-auto pb-8 ${AUTH.columnWide} h-fit flex flex-col items-center mt-2 sm:mt-4`}>
+          <div className="space-y-2 flex justify-center flex-col items-center w-full">
+            <img src={Logo} alt="logo" className="max-w-[140px] sm:max-w-none h-auto" />
             <Typography
               variant="heading"
-              className="text-center !text-[24px] font-medium font-[lora]"
+              className="text-center !text-[1.15rem] sm:!text-[1.35rem] md:!text-[1.5rem] font-medium font-[lora] px-1"
             >
               {user?.roles[0] === 'customer' ? 'User' : 'Vendor'} account detected
             </Typography>
             <Typography
               variant="body"
-              className="text-[#344054] text-center text-[16px] mt-2 leading-[24px]"
+              className="text-[#344054] text-center text-[0.95rem] md:text-[16px] mt-2 leading-[1.45] md:leading-[24px] max-w-[520px]"
             >
               {getRoleText()}
             </Typography>
@@ -105,21 +106,21 @@ const AddRole = () => {
               </p>
             </div>
           </div>
-          <form className="w-full py-5 xl:py-5">
-            <div className="border rounded-[10px] px-5 py-5">
+          <form className={`w-full ${AUTH.formPad}`}>
+            <div className="border rounded-[10px] px-4 sm:px-5 py-4 sm:py-5">
               <Typography
                 variant="heading"
-                className="!text-[18px] font-medium font-[lora] mb-5"
+                className="!text-[1rem] sm:!text-[18px] font-medium font-[lora] mb-4 sm:mb-5"
               >
                 Your role permissions
               </Typography>
 
-              <div className="flex space-y-5 flex-col">
+              <div className="flex space-y-4 sm:space-y-5 flex-col">
                 {/* Customer Role */}
-                <div className="flex justify-between">
-                  <div>
-                    <p className="text-[16px] font-[lora]">User</p>
-                    <p className="text-[14px] text-[#79747E]">
+                <div className="flex justify-between gap-3 items-start">
+                  <div className="min-w-0">
+                    <p className="text-[0.95rem] md:text-[16px] font-[lora]">User</p>
+                    <p className="text-[13px] md:text-[14px] text-[#79747E]">
                       Buy products and services
                     </p>
                   </div>
@@ -137,12 +138,12 @@ const AddRole = () => {
                 </div>
 
                 {/* Vendor Role */}
-                <div className="flex justify-between">
-                  <div>
-                    <p className="text-[16px] font-[lora]">
+                <div className="flex justify-between gap-3 items-start">
+                  <div className="min-w-0">
+                    <p className="text-[0.95rem] md:text-[16px] font-[lora]">
                       Vendor/service provider
                     </p>
-                    <p className="text-[14px] text-[#79747E]">
+                    <p className="text-[13px] md:text-[14px] text-[#79747E]">
                       Sell products and services
                     </p>
                   </div>
@@ -160,7 +161,7 @@ const AddRole = () => {
                 </div>
               </div>
             </div>
-            <div className="my-12">
+            <div className="my-8 md:my-12">
               <Button
                 variant="default"
                 size={"full"}

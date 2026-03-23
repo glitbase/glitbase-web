@@ -1,17 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from '@/components/Buttons';
-import { GoBack } from '@/components/GoBack';
 import { PasswordInput } from '@/components/Inputs/PasswordInput';
 import { Input } from '@/components/Inputs/TextInput';
 import { Typography } from '@/components/Typography';
 import { useLoginMutation } from '@/redux/auth';
 import { trackAction } from '@/utils/AmpHelper';
-import { handleError } from '@/utils/notify';
 import { validateFields } from '@/utils/validator';
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/redux-hooks';
 import { setTokens, setUser } from '@/redux/auth/authSlice';
 import GoogleAuth from '../GoogleAuth';
+import { isFirstVisit } from '@/utils/helpers';
+import { toast } from 'react-toastify';
+import { AUTH } from '@/pages/auth/authPageStyles';
 
 const Login = () => {
   const location = useLocation();
@@ -29,6 +31,13 @@ const Login = () => {
   const [errors, setErrors] = useState<any>(null);
   const [touched, setTouched] = useState<any>(emailFromQuery ? ['email'] : []);
   const dispatch = useAppDispatch();
+
+  // Redirect first-time visitors to splash screen
+  useEffect(() => {
+    if (isFirstVisit()) {
+      navigate('/auth/');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const x = validateFields(['email'], payload);
@@ -73,13 +82,13 @@ const Login = () => {
         ) {
           navigate(decodedReturnUrl);
         } else {
-          navigate('/');
+          window.location.href = '/';
         }
       } else {
-        navigate('/');
+        window.location.href = '/';
       }
     } catch (error: any) {
-      handleError(error?.data);
+      toast.error(error?.data?.message || error?.message || 'An unexpected error occurred.');
     }
   };
 
@@ -90,92 +99,83 @@ const Login = () => {
   }, [data]);
 
   return (
-    <main className="h-screen w-full !bg-[white]">
-      <div className="flex justify-end py-8 px-12">
-        {/* <GoBack text="Back" className="!text-[#60983C]" /> */}
-        <div className="flex items-center space-x-2">
-          <p className="text-[13px] text-[#344054]">New to Glitbase?</p>
-          <Button
-            onClick={() => navigate('/auth/onboard')}
-            variant={'secondary'}
-            className="border-none"
-          >
-            Sign up
-          </Button>
-        </div>
-      </div>
-      <div className=" px-4 mx-auto pb-2 max-w-[470px] h-fit flex flex-col items-center mt-[30px] xl:mt-[50px]">
-        <div className="space-y-2 flex justify-start flex-col items-start w-full">
-          <Typography
-            variant="heading"
-            className="text-left !text-[2rem] font-semibold font-[lora]"
-          >
+    <main className={AUTH.main}>
+      <p onClick={() => navigate('/auth/onboard')} className={AUTH.topLink}>
+        New to Glitbase? <span className={AUTH.topLinkAccent}>Sign up</span>
+      </p>
+      <div className={AUTH.center}>
+        <div className={AUTH.column}>
+          <Typography variant="heading" className={AUTH.title}>
             Welcome back ✨
           </Typography>
-          <Typography
-            variant="body"
-            className="text-[#344054] text-[16px] mt-2 text-left max-w-[404px]"
-          >
+          <p className={AUTH.subtitle}>
             Sign in to pick up where you left off with your beauty and lifestyle
             journey
-          </Typography>
-        </div>
-        <form className="w-full py-5 xl:py-10">
-          <div>
+          </p>
+
+          <form className={AUTH.formPad}>
             <div>
-              <Input
-                value={payload.email}
-                onChange={(e) => {
-                  setTouch('email');
-                  setPayload({ ...payload, email: e.target.value });
-                }}
-                error={
-                  touched.includes('email') && (errors?.errors?.email ?? '')
-                }
-                label="Email"
-                placeholder="Enter email address"
-              />
-            </div>
-            <div className="mt-5">
-              <PasswordInput
-                value={payload.password}
-                onChange={(e) => {
-                  setTouch('password');
-                  setPayload({ ...payload, password: e.target.value });
-                }}
-                error={
-                  touched.includes('password') &&
-                  (errors?.errors?.password ?? '')
-                }
-                label="Password"
-                placeholder="Enter password"
-              />
-            </div>
-            <div className="flex justify-end">
-              <div className="mt-2">
-                <a
-                  href="/auth/forgot-password"
-                  className="text-[13px] text-[#D01361] font-medium"
-                >
-                  {' '}
-                  Forgot password?
-                </a>
+              <div>
+                <Input
+                  value={payload.email}
+                  onChange={(e) => {
+                    setTouch('email');
+                    setPayload({ ...payload, email: e.target.value });
+                  }}
+                  // error={
+                  //   touched.includes('email') && (errors?.errors?.email ?? '')
+                  // }
+                  label="Email address"
+                  placeholder="Email address"
+                />
+              </div>
+              <div className="mt-5">
+                <PasswordInput
+                  value={payload.password}
+                  onChange={(e) => {
+                    setTouch('password');
+                    setPayload({ ...payload, password: e.target.value });
+                  }}
+                  error={
+                    touched.includes('password') &&
+                    (errors?.errors?.password ?? '')
+                  }
+                  label="Password"
+                  placeholder="Password"
+                />
+              </div>
+              <div className="flex justify-end">
+                <div className="mt-2">
+                  <a
+                    href="/auth/forgot-password"
+                    className="text-[13px] text-[#CC5A88] font-medium hover:underline"
+                  >
+                    {' '}
+                    Forgot password?
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="mb-3 mt-12">
-            <Button
-              variant="default"
-              size={'full'}
-              loading={isLoading}
-              disabled={isLoading || !errors?.isValid || touched.length !== 2}
-              onClick={handleSubmit}
-            >
-              Sign in
-            </Button>
-          </div>
-          <GoogleAuth isSignup={false} />
-        </form>
+            <div className="mb-3 mt-12">
+              <Button
+                variant="default"
+                size={'full'}
+                loading={isLoading}
+                disabled={isLoading || !errors?.isValid || touched.length !== 2}
+                onClick={handleSubmit}
+              >
+                Sign in
+              </Button>
+            </div>
+            {/* <div className="my-6 flex items-center">
+              <div className="flex-1 border-t border-gray-[#F0F0F0]"></div>
+              <span className="px-4 text-[14px] font-medium text-[#9D9D9D]">or</span>
+              <div className="flex-1 border-t border-gray-[#F0F0F0]"></div>
+            </div> */}
+            <GoogleAuth isSignup={false} />
+          </form>
+        </div>
+
       </div>
     </main>
   );

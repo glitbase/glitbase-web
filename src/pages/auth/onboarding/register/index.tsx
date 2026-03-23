@@ -3,8 +3,9 @@ import { Button } from '@/components/Buttons';
 import { Typography } from '@/components/Typography';
 import rolefill from '@/assets/images/rolefill.svg';
 import roleoutline from '@/assets/images/roleoutline.svg';
-import Card from '@/components/Card';
 import { useNavigate } from 'react-router-dom';
+import { isFirstVisit } from '@/utils/helpers';
+import { AUTH } from '@/pages/auth/authPageStyles';
 
 interface AccountOption {
   id: string;
@@ -19,6 +20,13 @@ const SignUp = () => {
   const navigate = useNavigate();
   const [screen] = useState(1);
   const [selectedOption, setSelectedOption] = useState<string>('');
+
+  // Redirect first-time visitors to splash screen
+  useEffect(() => {
+    if (isFirstVisit()) {
+      navigate('/auth/');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     // Reset selected option when the component mounts
@@ -59,44 +67,39 @@ const SignUp = () => {
   };
 
   return (
-    <main className="h-screen w-full !bg-[white]">
-      <div className="flex justify-end py-8 px-12">
-        <div className="flex items-center space-x-2">
-          <p className="text-[13px] text-[#344054]">Already have an account?</p>
-          <Button onClick={() => navigate('/auth/login')} variant="noBorder">
-            Sign in
-          </Button>
-        </div>
-      </div>
+    <main className={AUTH.main}>
+      <p
+        onClick={() => navigate('/auth/login')}
+        className={AUTH.topLink}
+      >
+        Already have an account?{' '}
+        <span className={AUTH.topLinkAccent}>Sign In</span>
+      </p>
 
-      <div className="flex justify-center items-center px-4 md:px-20">
-        <Card className=" rounded-sm py-5 px-4 md:px-12 w-full max-w-[510px] !shadow-none">
+      <div className={AUTH.center}>
+        <div className={AUTH.column}>
           {screen === 1 ? (
             <>
               <div className="space-y-2 flex justify-center flex-col items-start">
-                <Typography
-                  variant="heading"
-                  className="text-left !text-[2rem] font-medium font-[lora]"
-                >
+                <Typography variant="heading" className={AUTH.title}>
                   What's your role?
                 </Typography>
-                <p className="text-left font-medium text-[1rem] text-[#667185] !mt-3">
+                <p className={AUTH.subtitle}>
                   Select your role so we can personalize your experience based
                   on your goals
                 </p>
               </div>
 
-              <div className="mt-12 space-y-4">
+              <div className="mt-8 space-y-3">
                 {accountOptions.map((option) => (
                   <div
                     key={option.id}
                     onClick={() => handleOptionSelect(option.id)}
-                    className={`border rounded-lg p-4 cursor-pointer flex items-center justify-between
-                ${
-                  selectedOption === option.id
-                    ? 'border-[#CC5A88] bg-[#FFEFF6]'
-                    : 'border-gray-200'
-                }`}
+                    className={`bg-[#FAFAFA] rounded-lg p-4 cursor-pointer flex items-center justify-between
+                ${selectedOption === option.id
+                        ? 'border-[#CC5A88] bg-[#FFEFF6]'
+                        : 'border-gray-200'
+                      }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
@@ -105,51 +108,41 @@ const SignUp = () => {
                         <img src={option.icon} alt={option.title} />
                       </div>
                       <div>
-                        <h3 className="font-medium text-[#101928] ">
+                        <p className="font-medium text-[#0A0A0A] font-semibold">
                           {option.title}
-                        </h3>
-                        <p className="text-[.7rem] text-[#999999]  max-w-[220px]">
+                        </p>
+                        <p className="text-[0.8rem] sm:text-[0.85rem] font-medium text-[#6C6C6C] max-w-[min(220px,100%)]">
                           {option.description}
                         </p>
                       </div>
                     </div>
                     <div
                       className={`w-4 h-4 rounded-full border flex items-center justify-center
-                    ${
-                      selectedOption === option.id
-                        ? 'border-[#CC5A88] bg-white'
-                        : 'border-gray-300'
-                    }`}
+                    ${selectedOption === option.id
+                          ? 'border-[#CC5A88] bg-white'
+                          : 'border-gray-300'
+                        }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${
-                          selectedOption === option.id ? 'bg-[#CC5A88]' : ''
-                        }`}
+                        className={`w-2 h-2 rounded-full ${selectedOption === option.id ? 'bg-[#CC5A88]' : ''
+                          }`}
                       />
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-16 mb-12">
-                <Button
-                  onClick={handleContinue}
-                  disabled={!selectedOption}
-                  className={`w-full py-3 rounded-lg
-              ${
-                selectedOption
-                  ? 'bg-[#60983C] text-white hover:bg-[#4d7a30]'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
-                >
-                  Continue
-                </Button>
+
+
+              <div className="mt-10 mb-12">
+                <Button onClick={handleContinue} disabled={!selectedOption} variant='default' size='full'>Continue</Button>
+
               </div>
             </>
           ) : (
             <></>
           )}
-        </Card>
+        </div>
       </div>
     </main>
   );

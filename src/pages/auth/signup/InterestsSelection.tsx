@@ -8,6 +8,9 @@ import {
   useUpdateUserProfileMutation,
 } from '@/redux/auth';
 import { toast } from 'react-toastify';
+import ProgressBar from '@/components/ProgressBar';
+import { AUTH } from '@/pages/auth/authPageStyles';
+import { CircleAlert } from 'lucide-react';
 
 interface Interest {
   id: string;
@@ -25,7 +28,7 @@ const InterestsSelection = () => {
     data: categoriesData,
     isLoading,
     isError,
-  } = useGetInspirationCategoriesQuery();
+  } = useGetInspirationCategoriesQuery(undefined);
 
   // Update user profile mutation
   const [updateProfile, { isLoading: isUpdatingProfile }] =
@@ -46,14 +49,6 @@ const InterestsSelection = () => {
   const handleContinue = () => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    } else {
-      navigate(-1);
     }
   };
 
@@ -107,11 +102,10 @@ const InterestsSelection = () => {
     <button
       type="button"
       onClick={() => toggleInterest(interest.id)}
-      className={`px-4 py-2 rounded-full border transition-all flex items-center gap-2 ${
-        selectedInterests.includes(interest.id)
-          ? 'bg-[#CC5A88] border-[#CC5A88] text-white'
-          : 'bg-white border-gray-300 text-gray-700 hover:border-[#CC5A88]'
-      }`}
+      className={`px-4 py-2 rounded-full transition-all text-sm flex items-center gap-2 ${selectedInterests.includes(interest.id)
+          ? 'bg-[#FF71AA] text-white'
+          : 'bg-[#FAFAFA] text-[#3B3B3B] hover:border-[#CC5A88]'
+        }`}
     >
       <span>{interest.emoji}</span>
       <span className="text-sm font-medium">{interest.title}</span>
@@ -119,7 +113,7 @@ const InterestsSelection = () => {
   );
 
   const SkeletonChip = () => (
-    <div className="px-4 py-2 rounded-full border border-gray-200 bg-gray-100 flex items-center gap-2 animate-pulse">
+    <div className="px-4 py-2 rounded-full bg-[#FAFAFA] flex items-center gap-2 animate-pulse">
       <div className="w-4 h-4 bg-gray-300 rounded" />
       <div
         className="h-3 bg-gray-300 rounded"
@@ -139,52 +133,27 @@ const InterestsSelection = () => {
   // Loading state
   if (isLoading) {
     return (
-      <main className="h-screen w-full !bg-[white] overflow-y-auto">
-        <div className="flex justify-between py-8 px-12">
-          <button className="flex items-center gap-2 text-[#60983C]">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            <span>Back</span>
-          </button>
-        </div>
-
-        <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
-          <div className="w-full mb-6">
-            <p className="text-[#CC5A88] text-sm font-semibold mb-2">
+      <main className={`${AUTH.mainScroll} justify-center items-center`}>
+        <div className={`px-4 mx-auto pb-8 ${AUTH.columnInterests} flex flex-col items-center w-full`}>
+          <div className="w-full mb-8 md:mb-16">
+            <p className="text-[#CC5A88] text-[14px] font-semibold mb-3">
               Step 2 of 2
             </p>
-            <div className="w-full bg-gray-200 rounded-full h-1">
-              <div
-                className="bg-[#CC5A88] h-1 rounded-full"
-                style={{ width: '100%' }}
-              />
-            </div>
+            <ProgressBar value={100} />
           </div>
 
           <div className="space-y-2 flex justify-center flex-col items-start w-full">
-            <Typography
-              variant="heading"
-              className="text-left !text-[2rem] font-medium font-[lora]"
-            >
+            <Typography variant="heading" className={`${AUTH.title} w-full`}>
               What are you into?
             </Typography>
-            <p className="text-left font-medium text-[1rem] text-[#667185] !mt-3">
+            <p className={`${AUTH.subtitle} leading-[1.35] w-full`}>
               Select what you love so we can match you with inspirations and
               services that fit your vibe
             </p>
           </div>
 
-          <div className="w-full py-10">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+          <div className="w-full py-6 md:py-10">
+            <h3 className="font-medium mb-4 text-[#3B3B3B] text-[0.95rem] md:text-base">
               Loading categories...
             </h3>
             <SkeletonSection count={9} />
@@ -197,52 +166,17 @@ const InterestsSelection = () => {
   // Error state
   if (isError) {
     return (
-      <main className="h-screen w-full !bg-[white] overflow-y-auto">
-        <div className="flex justify-between py-8 px-12">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-[#60983C] hover:underline"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            <span>Back</span>
-          </button>
-        </div>
-
-        <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <svg
-              className="mx-auto h-12 w-12 text-red-500 mb-4"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <Typography
-              variant="heading"
-              className="!text-[1.5rem] font-medium mb-2"
-            >
-              Failed to load categories
-            </Typography>
-            <p className="text-[#667185] mb-6">
+      <main className={`${AUTH.mainScroll} justify-center items-center`}>
+        <div className="px-4 mx-auto pb-8 w-full max-w-[440px] sm:max-w-[600px] flex flex-col items-center justify-center min-h-[50vh]">
+          <div className="text-center px-2">
+            <CircleAlert size={50} strokeWidth={1.5} color='#CC5A88' className='mx-auto mb-4' />
+            <p className='text-[#3B3B3B] font-medium text-[1.1rem] md:text-[1.2rem] mb-2'>Failed to load categories</p>
+            <p className="text-[#667185] font-medium text-[0.95rem] md:text-[1rem]">
               Please check your connection and try again.
             </p>
             <Button
               onClick={() => window.location.reload()}
-              className="bg-[#60983C] text-white hover:bg-[#4d7a30]"
+              className="bg-[#60983C] text-white hover:bg-[#4d7a30] mt-8"
             >
               Retry
             </Button>
@@ -256,56 +190,28 @@ const InterestsSelection = () => {
   const currentTitle = getCurrentTitle();
 
   return (
-    <main className="h-screen w-full !bg-[white] overflow-y-auto">
-      <div className="flex justify-between py-8 px-12">
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 text-[#60983C] hover:underline"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-          </svg>
-          <span>Back</span>
-        </button>
-      </div>
-
-      <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
+    <main className={`${AUTH.mainScroll} justify-center items-center`}>
+      <div className={`px-4 mx-auto pb-8 ${AUTH.columnInterests} flex flex-col w-full`}>
         {/* Progress indicator */}
-        <div className="w-full mb-6">
-          <p className="text-[#CC5A88] text-sm font-semibold mb-2">
+        <div className="w-full mb-8 md:mb-16">
+          <p className="text-[#CC5A88] text-[14px] font-semibold mb-3">
             Step 2 of 2
           </p>
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <div
-              className="bg-[#CC5A88] h-1 rounded-full"
-              style={{ width: '100%' }}
-            />
-          </div>
+          <ProgressBar value={100} />
         </div>
 
         <div className="space-y-2 flex justify-center flex-col items-start w-full">
-          <Typography
-            variant="heading"
-            className="text-left !text-[2rem] font-medium font-[lora]"
-          >
+          <Typography variant="heading" className={`${AUTH.title} w-full`}>
             What are you into?
           </Typography>
-          <p className="text-left font-medium text-[1rem] text-[#667185] !mt-3">
+          <p className={`${AUTH.subtitle} leading-[1.35] w-full`}>
             Select what you love so we can match you with inspirations and
             services that fit your vibe
           </p>
         </div>
 
-        <div className="w-full py-10">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+        <div className="w-full py-6 md:py-10">
+          <h3 className="font-medium mb-4 text-[#3B3B3B] text-[0.95rem] md:text-base">
             {currentTitle}
           </h3>
           <div className="flex flex-wrap gap-3">
@@ -314,7 +220,7 @@ const InterestsSelection = () => {
                 <InterestChip key={interest.id} interest={interest} />
               ))
             ) : (
-              <p className="text-gray-500">
+              <p className="text-[#6C6C6C] font-medium text-sm">
                 No interests available for this category.
               </p>
             )}
@@ -322,16 +228,14 @@ const InterestsSelection = () => {
         </div>
 
         {/* Bottom button */}
-        <div className="w-full mt-8">
-          <Button
-            onClick={currentStep === 3 ? handleSave : handleContinue}
-            disabled={isUpdatingProfile}
-            loading={isUpdatingProfile}
-            className="w-full py-3 rounded-lg bg-[#60983C] text-white hover:bg-[#4d7a30]"
-          >
-            {currentStep === 3 ? 'Save' : 'Continue'}
-          </Button>
-        </div>
+        <Button
+          className="w-full sm:w-auto min-w-0"
+          onClick={currentStep === 3 ? handleSave : handleContinue}
+          disabled={isUpdatingProfile}
+          loading={isUpdatingProfile}
+        >
+          {currentStep === 3 ? 'Skip this for now' : 'Continue'}
+        </Button>
       </div>
     </main>
   );

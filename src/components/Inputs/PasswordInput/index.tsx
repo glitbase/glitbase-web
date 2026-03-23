@@ -3,7 +3,7 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const inputVariants = cva(
-  'flex h-[45px] w-full rounded-lg  px-3 py-2 placeholder:text-[12px] text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  'flex min-h-[50px] w-full rounded-lg !bg-[#FAFAFA] text-[#3B3B3B] font-medium px-3 py-1 placeholder:text-[14px] text-[14px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#9D9D9D] placeholder:font-medium focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -39,7 +39,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
       <div className="">
         {label && (
           <label
-            className="!mb-1 block text-[12px] font-medium text-[#1f1f1f]"
+            className="mb-1 block text-[14px] font-medium text-[#0A0A0A] font-medium"
             htmlFor={props.id}
           >
             {label}
@@ -63,9 +63,9 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             onClick={handleTogglePassword}
           >
             {showPassword ? (
-              <AiOutlineEyeInvisible color="#000000" />
+              <AiOutlineEyeInvisible color="#9D9D9D" />
             ) : (
-              <AiOutlineEye color="#000000" />
+              <AiOutlineEye color="#9D9D9D" />
             )}
           </button>
         </div>

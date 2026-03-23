@@ -8,14 +8,15 @@ import { useGetMarketplaceCategoriesQuery } from '@/redux/vendor';
 import { toast } from 'react-toastify';
 import CategoryCardSkeleton from '@/components/EntityCards/CategoryCardSkeleton';
 import AuthLayout from '@/layout/auth';
+import { GoBack } from '@/components/GoBack';
 
 const CategoriesSetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get data passed from previous step via navigation state
   const storeData = location.state?.storeData || {};
-  
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     storeData.categories || []
   );
@@ -57,17 +58,17 @@ const CategoriesSetup = () => {
   return (
     <AuthLayout isLoading={false}>
       <VendorOnboardingLayout progress={50} currentStep={4}>
-        <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
-          <div className="space-y-2 flex flex-col items-start w-full">
+        <div className="mx-auto pb-8 max-w-[600px] flex flex-col items-center">
+          <div className="space-y-2 flex flex-col items-start w-full mt-12">
+            <GoBack className='text-[1.3rem]' />
             <Typography
               variant="heading"
-              className="text-left !text-[2rem] font-medium font-[lora]"
+              className="text-left !text-[1.7rem] font-bold font-[lora] text-[#0A0A0A]"
             >
-              Choose your categories
+              Select your categories
             </Typography>
-            <p className="text-left font-normal text-[1rem] text-[#667185] !mt-3 max-w-[440px]">
-              Choose your categories so customers can easily browse and find
-              what they need
+            <p className="text-left font-medium text-[1rem] text-[#6C6C6C] !mt-2">
+              Choose your categories so customers can easily browse and find what they need
             </p>
           </div>
 
@@ -84,11 +85,10 @@ const CategoriesSetup = () => {
                   <button
                     key={category.id}
                     onClick={() => handleCategoryToggle(category.name)}
-                    className={`p-4  rounded-lg transition-all ${
-                      selectedCategories.includes(category.name)
-                        ? 'border-[#CC5A88] bg-[#FFF4FD]'
+                    className={`p-4  rounded-lg transition-all ${selectedCategories.includes(category.name)
+                        ? 'bg-[#FFF4FD]'
                         : 'bg-[#FAFAFA] hover:border-[#CC5A88]'
-                    }`}
+                      }`}
                   >
                     <div className="flex flex-col items-start gap-3">
                       {category.icon ? (
@@ -104,7 +104,7 @@ const CategoriesSetup = () => {
                           </span>
                         </div>
                       )}
-                      <p className="font-medium text-[1rem] text-left text-[#101928]">
+                      <p className="font-medium text-sm text-left text-[#0A0A0A]">
                         {category.name}
                       </p>
                     </div>
@@ -113,7 +113,7 @@ const CategoriesSetup = () => {
               </div>
             )}
 
-            {selectedCategories.length > 0 && (
+            {/* {selectedCategories.length > 0 && (
               <div className="mt-6 p-4 bg-[#F9FAFB] rounded-lg">
                 <p className="text-sm text-gray-600 mb-2">
                   Selected ({selectedCategories.length}):
@@ -129,7 +129,7 @@ const CategoriesSetup = () => {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             <div className="mt-8">
               <Button

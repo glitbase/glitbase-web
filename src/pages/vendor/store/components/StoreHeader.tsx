@@ -1,20 +1,164 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store } from '@/redux/vendor/storeSlice';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { toast } from 'react-toastify';
+import { Link2 } from 'lucide-react';
+import { Button } from '@/components/Buttons';
+import { useGetUserBookingsQuery, type Booking } from '@/redux/booking';
+import { useCreateChatMutation, useGetChatsQuery } from '@/redux/chat';
+import type { Chat } from '@/redux/chat/types';
+
+/** API expects 24-char hex MongoDB ObjectIds in `participants`. */
+function extractMongoUserId(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    return /^[a-fA-F0-9]{24}$/.test(t) ? t : undefined;
+  }
+  if (typeof value === 'object') {
+    const o = value as { _id?: unknown; id?: unknown };
+    const id = o._id ?? o.id;
+    if (typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id.trim())) return id.trim();
+  }
+  return undefined;
+}
+
+function formatChatApiError(err: unknown): string {
+  const msg = (err as { data?: { message?: string | string[] } })?.data?.message;
+  if (Array.isArray(msg)) return msg.join(' ');
+  if (typeof msg === 'string') return msg;
+  return 'Failed to open chat.';
+}
+
+function findExistingBookingChat(
+  chats: Chat[],
+  bookingReference: string,
+  storeId: string
+): Chat | undefined {
+  const byRef = chats.find(
+    (c) => c.type === 'booking' && c.booking?.bookingReference === bookingReference
+  );
+  if (byRef) return byRef;
+  return chats.find((c) => {
+    if (c.type !== 'booking') return false;
+    const sid = c.store?._id ?? c.store?.id;
+    return sid != null && String(sid) === storeId;
+  });
+}
 
 interface StoreHeaderProps {
   store: Store;
   isReadOnly?: boolean;
 }
 
+/** Customer may message vendor only once booking is accepted or in progress */
+const MESSAGE_ELIGIBLE_STATUSES = new Set<Booking['status']>(['confirmed', 'ongoing']);
+
+function pickQualifyingBookingForStore(bookings: Booking[], storeId: string): Booking | undefined {
+  const matches = bookings.filter(
+    (b) => b.store?.id === storeId && MESSAGE_ELIGIBLE_STATUSES.has(b.status)
+  );
+  if (matches.length === 0) return undefined;
+  return [...matches].sort(
+    (a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime()
+  )[0];
+}
+
 const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   const [showMenu, setShowMenu] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
+
+  const { data: bookingsRes } = useGetUserBookingsQuery(
+    { limit: 80, page: 1 },
+    { skip: !isReadOnly || !user?.id || !store?.id }
+  );
+
+  const qualifyingBooking = useMemo(
+    () => pickQualifyingBookingForStore(bookingsRes?.data?.bookings ?? [], store.id),
+    [bookingsRes?.data?.bookings, store.id]
+  );
+
+  const vendorUserId = useMemo(() => extractMongoUserId(store.owner), [store.owner]);
+
+  const shouldLoadChatsForMessage = Boolean(
+    isReadOnly && user?.id && qualifyingBooking
+  );
+
+  const { data: chatsData, refetch: refetchChats } = useGetChatsQuery(undefined, {
+    skip: !shouldLoadChatsForMessage,
+  });
+
+  const [createChat] = useCreateChatMutation();
+
+  const showMessageButton = Boolean(isReadOnly && user?.id && qualifyingBooking);
+
+  const handleMessageVendor = useCallback(async () => {
+    if (!qualifyingBooking) {
+      toast.error('You can only message this vendor after you have an active booking.');
+      return;
+    }
+    setOpeningChat(true);
+    try {
+      const tryOpenExisting = (chats: Chat[]) => {
+        const found = findExistingBookingChat(
+          chats,
+          qualifyingBooking.bookingReference,
+          store.id
+        );
+        const chatId = found?.chatId ?? found?.id ?? '';
+        if (chatId) {
+          navigate('/inbox', { state: { openChatId: chatId } });
+          return true;
+        }
+        return false;
+      };
+
+      if (tryOpenExisting(chatsData?.chats ?? [])) return;
+
+      const refetched = await refetchChats();
+      if (refetched.data?.chats && tryOpenExisting(refetched.data.chats)) return;
+
+      const vendorId = vendorUserId ?? extractMongoUserId(store.owner);
+      if (!vendorId) {
+        toast.error(
+          'Could not open chat: vendor account is unavailable. Please contact support or use your booking details.'
+        );
+        return;
+      }
+
+      const result = await createChat({
+        participants: [vendorId],
+        type: 'booking',
+        bookingId: qualifyingBooking._id,
+        storeId: store.id,
+        title: `Booking Discussion - ${qualifyingBooking.bookingReference}`,
+      }).unwrap();
+      const chatId = result.chat?.chatId ?? result.chat?.id ?? '';
+      if (!chatId) {
+        toast.error('Could not open chat. Please try from your booking details.');
+        return;
+      }
+      navigate('/inbox', { state: { openChatId: chatId } });
+    } catch (err: unknown) {
+      toast.error(formatChatApiError(err));
+    } finally {
+      setOpeningChat(false);
+    }
+  }, [
+    createChat,
+    navigate,
+    qualifyingBooking,
+    chatsData?.chats,
+    refetchChats,
+    vendorUserId,
+    store.owner,
+    store.id,
+  ]);
 
   const handleEditProfile = () => {
     navigate('/vendor/store/edit');
@@ -31,7 +175,7 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#F2FFEC] text-[#3D7B22]';
       case 'busy':
         return 'bg-yellow-100 text-yellow-800';
       case 'booked':
@@ -58,7 +202,7 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
     }
   };
 
-  console.log(store);
+  // console.log(store);
 
   return (
     <div className="bg-white ">
@@ -91,7 +235,7 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
         {/* Status Indicator */}
         <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
           <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+            className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] md:text-sm font-semibold ${getStatusColor(
               store.status
             )}`}
           >
@@ -105,8 +249,8 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="relative pb-6">
           {/* Profile Picture */}
-          <div className="absolute top-[-120px] left-1/2 transform -translate-x-1/2">
-            <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
+          <div className="absolute top-[-100px] md:top-[-120px] left-1/2 transform -translate-x-1/2">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-white overflow-hidden bg-white">
               {user?.profileImageUrl ? (
                 <img
                   src={user.profileImageUrl}
@@ -115,7 +259,7 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <span className="text-2xl text-gray-500">
+                  <span className="text-2xl md:text-3xl font-bold text-gray-700">
                     {store.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -124,10 +268,10 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end pt-4 space-x-2 absolute top-0 right-4">
+          <div className="flex justify-end space-x-2 absolute -top-12 right-0">
             <button
               onClick={handleShareStore}
-              className="p-2  rounded-md hover:bg-gray-50"
+              className="p-2 rounded-md hover:bg-gray-50"
             >
               <svg
                 width="24"
@@ -190,64 +334,35 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
                 </button>
 
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border">
-                    <div className="py-1">
-                      {!isReadOnly && (
-                        <button
-                          onClick={() => {
-                            window.open(`/store/${store.id}`, '_blank');
-                            setShowMenu(false);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <div className="flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                            Switch to customer view
-                          </div>
-                        </button>
-                      )}
-                      {!isReadOnly && (
-                        <button
-                          onClick={handleEditProfile}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <div className="flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                            Edit profile
-                          </div>
-                        </button>
-                      )}
-                    </div>
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg z-20 border border-[#F0F0F0] overflow-hidden">
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.open(`/store/${store.id}`, '_blank');
+                          setShowMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-[#101828] hover:bg-gray-50"
+                      >
+                        <svg className="w-4 h-4 text-[#6C6C6C] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Customer view
+                      </button>
+                    )}
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={handleEditProfile}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-[#101828] hover:bg-gray-50 border-t border-[#F0F0F0]"
+                      >
+                        <svg className="w-4 h-4 text-[#6C6C6C] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit profile
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -256,11 +371,11 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
 
           {/* Store Info */}
           <div className="mt-16 text-center">
-            <div className="flex items-center justify-center space-x-2 mb-2">
-              <h1 className="text-2xl font-bold text-gray-900">{store.name}</h1>
+            <div className="flex items-center justify-center space-x-2 mb-1">
+              <h1 className="text-[17px] md:text-[20px] font-semibold text-gray-900">{store.name}</h1>
               {store.isPublic && (
                 <svg
-                  className="w-6 h-6 text-blue-500"
+                  className="w-6 h-6 text-blue-500 scale-75 md:scale-100"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -293,61 +408,51 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
                   />
                 </svg>
 
-                <span className="ml-1 text-gray-900 font-medium">
+                <span className="ml-1 text-gray-900 text-[14px] font-medium">
                   {store.rating.toFixed(1)}
                 </span>
-                <span className="ml-1 text-gray-500">
+                <span className="ml-1 text-[#4C9A2A] text-[14px] font-semibold">
                   ({store.reviewCount})
                 </span>
               </div>
             </div>
 
             {/* Store Type Tags */}
-            <div className="flex flex-wrap gap-2 mb-3 justify-center">
-              {store.type.map((type) => (
-                <span
-                  key={type}
-                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+            <div className="flex flex-wrap items-center gap-1 mb-3 justify-center border border-[#F0F0F0] mt-6 rounded-full px-3 py-1 w-fit mx-auto">
+              {store.type.map((type, index) => (
+                <span key={type} className="flex items-center gap-1">
+                  {index > 0 && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#9D9D9D] inline-block mx-2" />
+                  )}
+                  <span className="text-[#0A0A0A] font-medium text-[12px] md:text-sm">
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </span>
                 </span>
               ))}
             </div>
 
             {/* Description */}
-            <p className="text-gray-700 mb-3">{store.description}</p>
+            <p className="text-[#3B3B3B] text-[15px] font-medium mb-3 max-w-[500px] mx-auto">{store.description}</p>
 
             {/* Store URL */}
             {store.id && (
-              <div className="flex items-center justify-center text-blue-600 mb-2">
-                <svg
-                  className="w-4 h-4 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                  />
-                </svg>
+              <div className="flex items-center justify-center gap-1 text-blue-600 mb-2">
+                <Link2 color="#4A85E4"  className='-rotate-45 mt-[2px]' size={19} />
                 <a
                   href={`/store/${store.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm hover:underline"
+                  className="text-sm text-[#4A85E4] font-medium"
                 >
                   giltbase.com/giltfinder/
-                  {store.name.toLowerCase().replace(/\s+/g, '-')}-store
+                  {store.name.toLowerCase().replace(/\s+/g, '-')}
                 </a>
               </div>
             )}
 
             {/* Location */}
             {store.location && (
-              <div className="flex items-center justify-center text-gray-600">
+              <div className="flex items-center justify-center text-[#6C6C6C] mt-6">
                 <svg
                   className="w-4 h-4 mr-1"
                   fill="none"
@@ -367,7 +472,7 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
                     d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
-                <span className="text-sm">
+                <span className="text-sm font-medium text-[#6C6C6C]">
                   {store.location.name}, {store.location.state}
                 </span>
               </div>
@@ -376,10 +481,21 @@ const StoreHeader = ({ store, isReadOnly = false }: StoreHeaderProps) => {
             {!isReadOnly && (
               <button
                 onClick={handleEditProfile}
-                className="mt-4 w-[fit-content] px-4 py-2  text-[#AE3670] rounded-full font-medium bg-[#FFF4FD] hover:bg-pink-50"
+                className="mt-8 w-[fit-content] px-5 py-2 md:py-3 text-[12px] md:text-[14px] text-[#AE3670] rounded-full font-semibold bg-[#FFF4FD] hover:bg-pink-50"
               >
                 Edit profile
               </button>
+            )}
+
+            {showMessageButton && (
+              <Button
+                className="mt-6 !px-8"
+                onClick={handleMessageVendor}
+                loading={openingChat}
+                disabled={openingChat}
+              >
+                Message
+              </Button>
             )}
           </div>
         </div>

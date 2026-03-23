@@ -3,91 +3,142 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
+import { ImagePlus, X, MoreVertical, Plus } from 'lucide-react';
 import {
   useCreateServiceMutation,
   useUpdateServiceMutation,
+  useCreateAddOnMutation,
+  useUpdateAddOnMutation,
+  useDeleteAddOnMutation,
+  useUpdateStoreMutation,
 } from '@/redux/vendor';
 import { useFileUploadMutation } from '@/redux/app';
 import { toast } from 'react-toastify';
 import { Input } from '@/components/Inputs/TextInput';
 import { Textarea } from '@/components/Inputs/TextAreaInput';
+import { CustomSelect } from '@/components/Inputs/SelectInput';
+import { Button } from '@/components/Buttons';
+import { useAppSelector } from '@/hooks/redux-hooks';
+
+interface AddOn {
+  id?: string;
+  _id?: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: { hours: number; minutes: number };
+}
+
+const serviceTypeOptions = [
+  { label: 'Normal service', value: 'normal' },
+  { label: 'Home service', value: 'home' },
+  { label: 'Drop-off & pick-up', value: 'pickDrop' },
+];
+
+const pricingTypeOptions = [
+  { label: 'Fixed', value: 'fixed' },
+  { label: 'Free', value: 'free' },
+  { label: 'From', value: 'from' },
+];
+
+const formatAddOnDuration = (duration: { hours: number; minutes: number }) => {
+  if (!duration) return '';
+  if (duration.hours === 0) return `${duration.minutes}m`;
+  if (duration.minutes === 0) return `${duration.hours}h`;
+  return `${duration.hours}h ${duration.minutes}m`;
+};
+
+/** Normalise an addon from the API — server may return durationInMinutes instead of { hours, minutes } */
+const normaliseAddOn = (addOn: any): AddOn => {
+  let duration = addOn.duration;
+  if (!duration || typeof duration !== 'object') {
+    const total = addOn.durationInMinutes || 0;
+    duration = { hours: Math.floor(total / 60), minutes: total % 60 };
+  }
+  return { ...addOn, duration };
+};
 
 const AddService = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { serviceId } = useParams();
   const store = useSelector((state: RootState) => state.vendorStore.store);
+  const user = useAppSelector((state) => state.auth.user);
 
-  // Get service from location state if editing
   const editService = location.state?.service;
   const isEditing = !!editService || !!serviceId;
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: [] as string[],
-    category: '',
-    imageUrl: '',
-    pricingType: 'fixed' as 'fixed' | 'free' | 'from',
-    price: '',
-    currency: 'NGN',
-    durationHours: '',
-    durationMinutes: '',
-    maxBookingPerTimeSlot: 1,
-    addOns: [] as any[],
-  });
-
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  // Multi-select types (array)
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [isDelivery, setIsDelivery] = useState(false);
+  const [category, setCategory] = useState<{ value: string; label: string } | null>(null);
+  const [pricingType, setPricingType] = useState<{ value: string; label: string } | null>(null);
+  const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState('NGN');
+  const [durationHours, setDurationHours] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [showPricingDropdown, setShowPricingDropdown] = useState(false);
+
+  // Category
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
-  const [showAddOnModal, setShowAddOnModal] = useState(false);
-  const [editingAddOn, setEditingAddOn] = useState<any>(null);
   const [newCategory, setNewCategory] = useState('');
-  const [addOnForm, setAddOnForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    durationHours: '',
-    durationMinutes: '',
+
+  // Add-on modal
+  const [showAddOnModal, setShowAddOnModal] = useState(false);
+  const [showAddOnActionsModal, setShowAddOnActionsModal] = useState(false);
+  const [editingAddOnIndex, setEditingAddOnIndex] = useState<number | null>(null);
+  const [currentAddOn, setCurrentAddOn] = useState<AddOn>({
+    name: '', description: '', price: 0, duration: { hours: 0, minutes: 0 },
   });
 
   const [createService, { isLoading: isCreating }] = useCreateServiceMutation();
   const [updateService, { isLoading: isUpdating }] = useUpdateServiceMutation();
+  const [createAddOn, { isLoading: isCreatingAddOn }] = useCreateAddOnMutation();
+  const [updateAddOn, { isLoading: isUpdatingAddOn }] = useUpdateAddOnMutation();
+  const [deleteAddOn, { isLoading: isDeletingAddOn }] = useDeleteAddOnMutation();
+  const [updateStore, { isLoading: isUpdatingStore }] = useUpdateStoreMutation();
   const [fileUpload] = useFileUploadMutation();
+
+  const categories = store?.preferredCategories || [];
+  const categoryOptions = categories.map((c: string) => ({ label: c, value: c }));
+
+  useEffect(() => {
+    setCurrency(user?.countryCode === 'NG' ? 'NGN' : 'GBP');
+  }, [user?.countryCode]);
 
   useEffect(() => {
     if (editService) {
       const hours = Math.floor(editService.durationInMinutes / 60);
       const minutes = editService.durationInMinutes % 60;
 
-      setFormData({
-        name: editService.name || '',
-        description: editService.description || '',
-        type: editService.type || [],
-        category: editService.category || '',
-        imageUrl: editService.imageUrl || '',
-        pricingType: editService.pricingType || 'fixed',
-        price: editService.price?.toString() || '',
-        currency: editService.currency || 'NGN',
-        durationHours: hours.toString(),
-        durationMinutes: minutes.toString(),
-        maxBookingPerTimeSlot: editService.maxBookingPerTimeSlot || 1,
-        addOns: editService.addOns || [],
-      });
+      setName(editService.name || '');
+      setDescription(editService.description || '');
+      setImageUrl(editService.imageUrl || '');
+      setPrice(editService.price?.toString() || '');
+      setDurationHours(hours > 0 ? hours.toString() : '');
+      setDurationMinutes(minutes > 0 ? minutes.toString() : '');
+      setAddOns((editService.addOns || []).map(normaliseAddOn));
+      setIsDelivery(editService.isDelivery || false);
+      setSelectedTypes(editService.type || []);
+
+      if (editService.category) setCategory({ value: editService.category, label: editService.category });
+
+      const foundPricing = pricingTypeOptions.find((p) => p.value === editService.pricingType);
+      if (foundPricing) setPricingType(foundPricing);
     }
   }, [editService]);
 
   const handleImageUpload = async (file: File) => {
     try {
       setIsUploadingImage(true);
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-
-      const response = await fileUpload(formDataUpload).unwrap();
-      setFormData((prev) => ({ ...prev, imageUrl: response.url }));
-      toast.success('Image uploaded successfully');
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fileUpload(fd).unwrap();
+      setImageUrl(res.url);
     } catch (error: any) {
       toast.error(error?.data?.message || 'Failed to upload image');
     } finally {
@@ -96,764 +147,476 @@ const AddService = () => {
   };
 
   const handleTypeToggle = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      type: prev.type.includes(value)
-        ? prev.type.filter((t) => t !== value)
-        : [...prev.type, value],
-    }));
+    setSelectedTypes((prev) =>
+      prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+    );
+    // Clear isDelivery if pickDrop is deselected
+    if (value === 'pickDrop' && selectedTypes.includes('pickDrop')) {
+      setIsDelivery(false);
+    }
   };
 
-  const handleAddCategory = () => {
-    if (!newCategory.trim()) {
-      toast.error('Please enter a category name');
-      return;
+  const handleAddCategory = async () => {
+    if (!newCategory.trim()) { toast.error('Please enter a category name'); return; }
+    if (!store?.id) { toast.error('Store not found'); return; }
+
+    const exists = categories.some((c: string) => c.toLowerCase() === newCategory.trim().toLowerCase());
+    if (exists) { toast.error('This category already exists'); return; }
+
+    try {
+      const updated = [...categories, newCategory.trim()];
+      await updateStore({ storeId: store.id, preferredCategories: updated }).unwrap();
+      setCategory({ value: newCategory.trim(), label: newCategory.trim() });
+      setNewCategory('');
+      setShowAddCategoryModal(false);
+      toast.success('Category added successfully');
+    } catch (error: any) {
+      toast.error(error?.data?.message || 'Failed to add category');
     }
-    setFormData((prev) => ({ ...prev, category: newCategory }));
-    setNewCategory('');
-    setShowAddCategoryModal(false);
   };
 
-  const handleAddOn = () => {
-    if (!addOnForm.name.trim()) {
-      toast.error('Add-on name is required');
-      return;
-    }
+  const resetAddOnForm = () => {
+    setCurrentAddOn({ name: '', description: '', price: 0, duration: { hours: 0, minutes: 0 } });
+    setEditingAddOnIndex(null);
+  };
 
-    const hours = parseInt(addOnForm.durationHours) || 0;
-    const minutes = parseInt(addOnForm.durationMinutes) || 0;
+  const handleSaveAddOn = async () => {
+    if (!currentAddOn.name.trim()) { toast.error('Add-on name is required'); return; }
 
-    const newAddOn = {
-      id: editingAddOn?.id || Date.now().toString(),
-      name: addOnForm.name,
-      description: addOnForm.description,
-      price: parseFloat(addOnForm.price),
-      duration: {
-        hours,
-        minutes,
-      },
-    };
-
-    if (editingAddOn) {
-      setFormData((prev) => ({
-        ...prev,
-        addOns: prev.addOns.map((ao) =>
-          ao.id === editingAddOn.id ? newAddOn : ao
-        ),
-      }));
+    // Always update local state first so the UI is responsive
+    if (editingAddOnIndex !== null) {
+      setAddOns((prev) => {
+        const updated = [...prev];
+        updated[editingAddOnIndex] = { ...currentAddOn };
+        return updated;
+      });
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        addOns: [...prev.addOns, newAddOn],
-      }));
+      setAddOns((prev) => [...prev, { ...currentAddOn }]);
     }
 
-    setAddOnForm({
-      name: '',
-      description: '',
-      price: '',
-      durationHours: '',
-      durationMinutes: '',
-    });
-    setEditingAddOn(null);
+    resetAddOnForm();
     setShowAddOnModal(false);
+
+    // Fire API calls in the background when in edit mode
+    if (isEditing && editService?.id) {
+      try {
+        if (editingAddOnIndex !== null) {
+          const existing = addOns[editingAddOnIndex];
+          const addOnId = existing?.id || existing?._id;
+          if (addOnId) {
+            await updateAddOn({
+              serviceId: editService.id,
+              addOnId,
+              data: {
+                name: currentAddOn.name,
+                description: currentAddOn.description,
+                price: currentAddOn.price,
+                duration: currentAddOn.duration,
+              },
+            }).unwrap();
+          }
+        } else {
+          await createAddOn({
+            serviceId: editService.id,
+            data: {
+              name: currentAddOn.name,
+              description: currentAddOn.description,
+              price: currentAddOn.price,
+              duration: currentAddOn.duration,
+            },
+          }).unwrap();
+        }
+      } catch (error: any) {
+        toast.error(error?.data?.message || 'Failed to sync add-on with server');
+      }
+    }
   };
 
-  const handleEditAddOn = (addOn: any) => {
-    setEditingAddOn(addOn);
-    setAddOnForm({
-      name: addOn.name,
-      description: addOn.description || '',
-      price: addOn.price?.toString() || '',
-      durationHours: addOn.duration?.hours?.toString() || '0',
-      durationMinutes: addOn.duration?.minutes?.toString() || '0',
-    });
-    setShowAddOnModal(true);
+  const handleRemoveAddOn = async (index: number) => {
+    try {
+      const addOn = addOns[index];
+      const addOnId = addOn?.id || addOn?._id;
+      if (isEditing && editService?.id && addOnId) {
+        await deleteAddOn({ serviceId: editService.id, addOnId }).unwrap();
+        toast.success('Add-on removed');
+      }
+      setAddOns((prev) => prev.filter((_, i) => i !== index));
+      setShowAddOnActionsModal(false);
+    } catch (error: any) {
+      toast.error(error?.data?.message || 'Failed to remove add-on');
+    }
   };
 
-  const handleDeleteAddOn = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      addOns: prev.addOns.filter((ao) => ao.id !== id),
-    }));
-  };
+  const hours = parseInt(durationHours) || 0;
+  const minutes = parseInt(durationMinutes) || 0;
+  const totalMinutes = hours * 60 + minutes;
+
+  const isFormValid =
+    name.trim() &&
+    selectedTypes.length > 0 &&
+    category &&
+    imageUrl &&
+    pricingType &&
+    totalMinutes > 0 &&
+    (pricingType?.value === 'free' || price);
+
+  const isLoading = isCreating || isUpdating || isCreatingAddOn || isUpdatingAddOn || isDeletingAddOn;
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
-      toast.error('Service name is required');
-      return;
-    }
+    if (!name.trim()) { toast.error('Service name is required'); return; }
+    if (selectedTypes.length === 0) { toast.error('At least one service type is required'); return; }
+    if (!category) { toast.error('Category is required'); return; }
+    if (!imageUrl) { toast.error('Service image is required'); return; }
+    if (!pricingType) { toast.error('Pricing type is required'); return; }
+    if (totalMinutes <= 0 || totalMinutes > 1440) { toast.error('Duration must be between 1 minute and 24 hours'); return; }
 
-    if (formData.type.length === 0) {
-      toast.error('Please select at least one service type');
-      return;
-    }
-
-    if (!formData.category) {
-      toast.error('Category is required');
-      return;
-    }
-
-    const hours = parseInt(formData.durationHours) || 0;
-    const minutes = parseInt(formData.durationMinutes) || 0;
-    const durationInMinutes = hours * 60 + minutes;
-
-    if (durationInMinutes <= 0) {
-      toast.error('Duration must be greater than 0');
-      return;
-    }
-
-    const payload = {
-      name: formData.name,
-      description: formData.description,
-      type: formData.type,
-      category: formData.category,
-      imageUrl: formData.imageUrl,
-      pricingType: formData.pricingType,
-      price: formData.pricingType === 'free' ? 0 : parseFloat(formData.price),
-      currency: formData.currency,
-      duration: {
-        hours,
-        minutes,
-      },
-      maxBookingPerTimeSlot: formData.maxBookingPerTimeSlot,
-      addOns: formData.addOns.map((addOn: any) => ({
-        name: addOn.name,
-        description: addOn.description,
-        price: addOn.price,
-        duration: {
-          hours: addOn.duration.hours,
-          minutes: addOn.duration.minutes,
-        },
-      })),
+    const basePayload: any = {
+      name,
+      description: description || undefined,
+      type: selectedTypes,
+      category: category.value,
+      imageUrl,
+      pricingType: pricingType.value,
+      price: pricingType.value === 'free' ? 0 : parseFloat(price),
+      currency,
+      duration: { hours, minutes },
+      maxBookingPerTimeSlot: 1,
     };
+
+    if (selectedTypes.includes('pickDrop')) {
+      basePayload.isDelivery = isDelivery;
+    }
 
     try {
       if (isEditing && editService) {
-        await updateService({
-          serviceId: editService.id,
-          ...payload,
-        }).unwrap();
-        toast.success('Service updated successfully');
+        await updateService({ serviceId: editService.id, ...basePayload }).unwrap();
+        toast.success('Service updated and published');
       } else {
         await createService({
           storeId: store?.id || '',
-          ...payload,
+          ...basePayload,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          addOns: addOns.length > 0 ? addOns.map(({ id: _aid, _id: __aid, ...rest }) => rest) : undefined,
         }).unwrap();
-        toast.success('Service created successfully');
+        toast.success('New service created and published');
       }
       navigate('/vendor/store');
     } catch (error: any) {
-      toast.error(
-        error?.data?.message ||
-          `Failed to ${isEditing ? 'update' : 'create'} service`
-      );
+      toast.error(error?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} service`);
     }
   };
 
-  const serviceTypes = [
-    { label: 'Normal service', value: 'normal' },
-    { label: 'Home service', value: 'home' },
-    { label: 'Drop-off & pick-up', value: 'drop-off' },
-  ];
-
-  const pricingTypes = [
-    { label: 'Fixed', value: 'fixed' },
-    { label: 'Free', value: 'free' },
-    { label: 'From', value: 'from' },
-  ];
-
-  const categories = store?.preferredCategories || [];
-
-  const isLoading = isCreating || isUpdating;
-  const isFormValid =
-    formData.name.trim() &&
-    formData.type.length > 0 &&
-    formData.category &&
-    (parseInt(formData.durationHours) > 0 ||
-      parseInt(formData.durationMinutes) > 0) &&
-    (formData.pricingType === 'free' || formData.price);
-
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white min-w-0">
       {/* Header */}
-      <div className="border-b sticky top-0 bg-white z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
+      <header className="sticky top-0 z-10 bg-white border-b border-[#F0F0F0] px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="p-2 -ml-1 sm:-ml-2 rounded-full hover:bg-gray-100 touch-manipulation shrink-0"
+          aria-label="Go back"
+        >
+          <X className="w-5 h-5 text-[#101828]" />
+        </button>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink-0">
+          <Button
+            variant="cancel"
+            size="auto"
+            onClick={() => navigate(-1)}
+            className="!px-2.5 sm:!px-4 !text-xs sm:!text-sm whitespace-nowrap touch-manipulation"
+          >
+            Cancel
+          </Button>
+          <Button
+            size="auto"
+            onClick={handleSubmit}
+            disabled={!isFormValid || isLoading}
+            loading={isLoading}
+            className="!px-3 sm:!px-6 !text-xs sm:!text-sm touch-manipulation shrink-0"
+          >
+            {isEditing ? 'Edit service' : 'Add service'}
+          </Button>
+        </div>
+      </header>
+
+      {/* Form */}
+      <div className="w-full max-w-[550px] mx-auto min-w-0 px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8 space-y-5 sm:space-y-7">
+        <h1 className="text-xl sm:text-[23px] font-bold text-[#0A0A0A] tracking-tight font-[lora] break-words pr-1">
+          {isEditing ? 'Edit service' : 'Add service'}
+        </h1>
+
+        {/* Service photo */}
+        <div>
+          <label className="block text-sm sm:text-[14px] font-medium text-[#344054] mb-2">
+            Service photo
+          </label>
+          {isUploadingImage ? (
+            <div className="w-full h-36 sm:h-44 rounded-xl bg-[#F5F5F5] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#4C9A2A] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : imageUrl ? (
+            <div className="relative w-full h-36 sm:h-44 rounded-xl overflow-hidden">
+              <img src={imageUrl} alt="Service" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => document.getElementById('service-image-upload')?.click()}
+                disabled={isUploadingImage}
+                className="absolute top-2 right-2 bg-black/70 text-white text-[11px] sm:text-[12px] font-medium flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg touch-manipulation"
+              >
+                Change
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              type="button"
+              onClick={() => document.getElementById('service-image-upload')?.click()}
+              className="w-full h-36 sm:h-44 rounded-xl bg-[#FAFAFA] border border-dashed border-[#E5E7EB] flex flex-col items-center justify-center text-[#9D9D9D] hover:bg-[#F5F5F5] transition-colors touch-manipulation"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <ImagePlus strokeWidth={1.5} size={32} color="#6C6C6C" />
+              <span className="mt-2 text-[13px] font-medium text-[#6C6C6C]">Add photo</span>
             </button>
-            <h1 className="text-xl font-bold text-gray-900">
-              {isEditing ? 'Edit service' : 'Add service'}
-            </h1>
-            <div className="flex items-center gap-3">
+          )}
+          <input
+            id="service-image-upload"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0]); }}
+          />
+        </div>
+
+        {/* Service name */}
+        <Input
+          label="Service name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Service name"
+        />
+
+        {/* Description */}
+        <Textarea
+          label="Service description (optional)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+          placeholder="Tell customers about this service, what's included, and any special requirements..."
+        />
+
+        {/* Service type (multi) */}
+        <div>
+          <label className="block text-sm sm:text-[14px] font-medium text-[#0A0A0A] mb-2">Service type</label>
+          <div className="rounded-xl bg-[#FAFAFA] border border-[#E5E7EB] overflow-hidden">
+            {serviceTypeOptions.map((opt, idx) => (
               <button
-                onClick={() => navigate(-1)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                key={opt.value}
+                type="button"
+                onClick={() => handleTypeToggle(opt.value)}
+                className={`w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-3 sm:py-3.5 text-left transition-colors hover:bg-gray-50 touch-manipulation min-w-0 ${idx > 0 ? 'border-t border-[#F0F0F0]' : ''}`}
               >
-                Cancel
+                <span className={`text-sm sm:text-[14px] font-medium min-w-0 pr-2 ${selectedTypes.includes(opt.value) ? 'text-[#101828]' : 'text-[#6C6C6C]'}`}>
+                  {opt.label}
+                </span>
+                <div className={`w-5 h-5 rounded flex items-center justify-center border ${selectedTypes.includes(opt.value) ? 'bg-[#CC5A88] border-[#CC5A88]' : 'border-[#D0D5DD] bg-white'}`}>
+                  {selectedTypes.includes(opt.value) && (
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!isFormValid || isLoading}
-                className="px-4 py-2 bg-[#60983C] text-white rounded-lg hover:bg-[#4d7a30] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading
-                  ? isEditing
-                    ? 'Updating...'
-                    : 'Creating...'
-                  : isEditing
-                  ? 'Edit service'
-                  : 'Add service'}
-              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* isDelivery toggle — only when pickDrop selected */}
+        {selectedTypes.includes('pickDrop') && (
+          <div className="bg-[#F5F5F5] rounded-xl p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 min-w-0">
+            <span className="text-sm sm:text-[14px] font-medium text-[#101828] min-w-0 flex-1">
+              Customer can choose drop-off or pick-up points?
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsDelivery((v) => !v)}
+              className={`relative w-11 h-6 rounded-full transition-colors shrink-0 self-end sm:self-auto touch-manipulation ${isDelivery ? 'bg-[#4C9A2A]' : 'bg-[#D0D5DD]'}`}
+              aria-pressed={isDelivery}
+              aria-label="Toggle delivery option"
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isDelivery ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
+        )}
+
+        {/* Category */}
+        <div>
+          <CustomSelect
+            label="Category"
+            options={categoryOptions}
+            value={category}
+            onChange={(opt) => setCategory(opt as { value: string; label: string })}
+            placeholder="Category"
+          />
+          <button
+            type="button"
+            onClick={() => setShowAddCategoryModal(true)}
+            className="mt-3 text-[13px] font-medium text-[#CC5A88] flex items-center gap-1 touch-manipulation"
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Add category
+          </button>
+        </div>
+
+        {/* Pricing type */}
+        <CustomSelect
+          label="Pricing type"
+          options={pricingTypeOptions}
+          value={pricingType}
+          onChange={(opt) => {
+            const selected = opt as { value: string; label: string };
+            setPricingType(selected);
+            if (selected?.value === 'free') setPrice('');
+          }}
+          placeholder="Pricing type"
+        />
+
+        {/* Price */}
+        {pricingType && pricingType.value !== 'free' && (
+          <div>
+            <label className="block text-sm sm:text-[14px] font-medium text-[#0A0A0A] mb-1">Price</label>
+            <div className="relative min-w-0">
+              <Input
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0.00"
+                className="pl-14 min-w-0"
+                type="tel"
+              />
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#6C6C6C] pointer-events-none">
+                {currency}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Duration */}
+        <div>
+          <label className="block text-sm sm:text-[14px] font-medium text-[#0A0A0A] mb-1">Duration</label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 min-w-0">
+              <Input
+                type="number"
+                value={durationHours === '0' ? '' : durationHours}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value) || 0;
+                  setDurationHours(v.toString());
+                }}
+                min={0}
+                placeholder="Hours"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Input
+                type="number"
+                value={durationMinutes === '0' ? '' : durationMinutes}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value) || 0;
+                  if (v > 59) return;
+                  setDurationMinutes(v.toString());
+                }}
+                min={0}
+                max={59}
+                placeholder="Minutes"
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Form Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <div className="space-y-6">
-          {/* Service Image */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Service photo
-            </label>
-            {isUploadingImage ? (
-              <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#60983C]"></div>
-              </div>
-            ) : formData.imageUrl ? (
-              <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                <img
-                  src={formData.imageUrl}
-                  alt="Service"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, imageUrl: '' }))
-                  }
-                  className="absolute top-3 right-3 p-2 bg-black bg-opacity-60 text-white rounded-full hover:bg-opacity-80"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div
-                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 bg-gray-50"
-                onClick={() =>
-                  document.getElementById('service-image-upload')?.click()
-                }
-              >
-                <svg
-                  className="w-12 h-12 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="mt-2 text-sm text-gray-500">Add media</span>
-              </div>
-            )}
-            <input
-              id="service-image-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  handleImageUpload(e.target.files[0]);
-                }
-              }}
-            />
-          </div>
-
-          {/* Service Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Service name
-            </label>
-            <Input
-              type="text"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
-              }
-              placeholder="Service name"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Service description (optional)
-            </label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              rows={3}
-              placeholder="Tell customers about this service, what's included, and any special requirements..."
-            />
-          </div>
-
-          {/* Service Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Service type
-            </label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-left flex justify-between items-center bg-gray-50"
-              >
-                <span className="text-gray-500">Service type</span>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform ${
-                    showTypeDropdown ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {showTypeDropdown && (
-                <div className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {serviceTypes.map((type) => (
-                    <button
-                      key={type.value}
-                      type="button"
-                      onClick={() => {
-                        handleTypeToggle(type.value);
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex justify-between items-center border-b last:border-0"
-                    >
-                      <span className="text-gray-900">{type.label}</span>
-                      {formData.type.includes(type.value) && (
-                        <svg
-                          className="w-5 h-5 text-[#60983C]"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Selected Types */}
-            {formData.type.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {formData.type.map((value) => {
-                  const type = serviceTypes.find((t) => t.value === value);
-                  return (
-                    <div
-                      key={value}
-                      className="px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200 flex items-center gap-2 text-sm"
-                    >
-                      <span>{type?.label}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleTypeToggle(value)}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Category
-            </label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-left flex justify-between items-center bg-gray-50"
-              >
-                <span
-                  className={
-                    formData.category ? 'text-gray-900' : 'text-gray-500'
-                  }
-                >
-                  {formData.category || 'Category'}
-                </span>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform ${
-                    showCategoryDropdown ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {showCategoryDropdown && (
-                <div className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => {
-                        setFormData((prev) => ({ ...prev, category: cat }));
-                        setShowCategoryDropdown(false);
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 text-gray-900 border-b last:border-0"
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
+        {/* Add-ons */}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <span className="text-sm sm:text-[14px] font-medium text-[#0A0A0A] min-w-0">
+              <strong>Add-ons</strong> (Optional)
+            </span>
             <button
               type="button"
-              onClick={() => setShowAddCategoryModal(true)}
-              className="mt-2 text-sm text-[#EA1179] hover:underline flex items-center"
+              onClick={() => { resetAddOnForm(); setShowAddOnModal(true); }}
+              className="flex items-center gap-1 text-[13px] font-medium text-[#4C9A2A] touch-manipulation shrink-0"
             >
-              <span className="text-lg mr-1">+</span> Add category
+              <Plus size={16} strokeWidth={2.5} />
+              Add
             </button>
           </div>
 
-          {/* Pricing Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Pricing type
-            </label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowPricingDropdown(!showPricingDropdown)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-left flex justify-between items-center bg-gray-50"
-              >
-                <span className="text-gray-900 capitalize">
-                  {pricingTypes.find((p) => p.value === formData.pricingType)
-                    ?.label || 'Pricing type'}
-                </span>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform ${
-                    showPricingDropdown ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {showPricingDropdown && (
-                <div className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg">
-                  {pricingTypes.map((type) => (
-                    <button
-                      key={type.value}
-                      type="button"
-                      onClick={() => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          pricingType: type.value as any,
-                        }));
-                        setShowPricingDropdown(false);
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 text-gray-900 border-b last:border-0"
-                    >
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Price */}
-          {formData.pricingType !== 'free' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Price
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
-                  {formData.currency}
-                </span>
-                <input
-                  type="text"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, price: e.target.value }))
-                  }
-                  min="0"
-                  step="0.01"
-                  className="w-full pl-16 pr-4 py-3 border border-gray-300 rounded-lg  bg-gray-50 outline-none"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Duration */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Duration
-            </label>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <input
-                  type="number"
-                  value={formData.durationHours}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      durationHours: e.target.value,
-                    }))
-                  }
-                  min="0"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#60983C] focus:border-transparent bg-gray-50"
-                  placeholder="Hours"
-                />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="number"
-                  value={formData.durationMinutes}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      durationMinutes: e.target.value,
-                    }))
-                  }
-                  min="0"
-                  max="59"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#60983C] focus:border-transparent bg-gray-50"
-                  placeholder="Minutes"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Add-ons */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Add-ons
-            </label>
-            {formData.addOns.length > 0 && (
-              <div className="space-y-3 mb-3">
-                {formData.addOns.map((addOn) => (
-                  <div
-                    key={addOn.id}
-                    className="p-4 border border-gray-200 rounded-lg bg-gray-50"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">
-                          {addOn.name}
-                        </h4>
-                        {addOn.description && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {addOn.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-700">
-                          <span>
-                            {formData.currency} {addOn.price}
-                          </span>
-                          {addOn.duration && (
-                            <span>
-                              · {addOn.duration.hours || 0}h{' '}
-                              {addOn.duration.minutes || 0}min
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          type="button"
-                          onClick={() => handleEditAddOn(addOn)}
-                          className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAddOn(addOn.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
+          {addOns.length > 0 && (
+            <div className="space-y-2">
+              {addOns.map((addOn, index) => (
+                <div key={addOn.id || addOn._id || index} className="py-3 border-b border-[#F0F0F0] flex items-start justify-between gap-2 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm sm:text-[14px] font-semibold text-[#101828] break-words">{addOn.name}</p>
+                    {addOn.description && (
+                      <p className="text-[13px] font-medium text-[#6C6C6C] mt-0.5 break-words">{addOn.description}</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-1.5 text-[13px]">
+                      <span className="font-semibold text-[#101828]">
+                        {currency === 'NGN' ? '₦' : '£'}{addOn.price.toLocaleString()}
+                      </span>
+                      {addOn.duration && (
+                        <span className="text-[#6C6C6C] font-medium">• {formatAddOnDuration(addOn.duration)}</span>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setEditingAddOn(null);
-                setAddOnForm({
-                  name: '',
-                  description: '',
-                  price: '',
-                  durationHours: '',
-                  durationMinutes: '',
-                });
-                setShowAddOnModal(true);
-              }}
-              className="text-sm text-[#EA1179] hover:underline flex items-center"
-            >
-              <span className="text-lg mr-1">+</span> Add add-on
-            </button>
-          </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentAddOn(normaliseAddOn(addOn));
+                      setEditingAddOnIndex(index);
+                      setShowAddOnActionsModal(true);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 touch-manipulation shrink-0"
+                    aria-label="Add-on options"
+                  >
+                    <MoreVertical size={16} className="text-[#6C6C6C]" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Add Category Modal */}
       {showAddCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Add category</h3>
-              <button
-                onClick={() => {
-                  setShowAddCategoryModal(false);
-                  setNewCategory('');
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 py-0 sm:py-4 overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-sm p-5 sm:p-6 my-auto sm:my-0 max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[17px] font-bold text-[#101828] font-[lora] tracking-tight">Add New Category</h3>
+              <button type="button" onClick={() => { setShowAddCategoryModal(false); setNewCategory(''); }} className="p-2 rounded-full hover:bg-gray-100">
+                <X className="w-5 h-5 text-[#6C6C6C]" />
               </button>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category name
-                </label>
-                <input
-                  type="text"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#60983C] focus:border-transparent bg-gray-50"
-                  placeholder="Category name"
-                  autoFocus
-                />
+            <Input
+              label="Category name"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="Enter category name"
+            />
+            <div className="flex gap-3 mt-5">
+              <div className="flex-1">
+                <Button variant="cancel" size="full" onClick={() => setShowAddCategoryModal(false)}>
+                  Cancel
+                </Button>
               </div>
-              <button
-                onClick={handleAddCategory}
-                className="w-full px-6 py-3 bg-[#60983C] text-white rounded-lg hover:bg-[#4d7a30]"
-              >
-                Add category
-              </button>
+              <div className="flex-1">
+                <Button
+                  variant="default"
+                  size="full"
+                  onClick={handleAddCategory}
+                  disabled={!newCategory.trim() || isUpdatingStore}
+                  loading={isUpdatingStore}
+                >
+                  Add category
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -861,145 +624,131 @@ const AddService = () => {
 
       {/* Add-on Modal */}
       {showAddOnModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 my-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                {editingAddOn ? 'Edit add-on' : 'Add add-on'}
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-0 sm:px-4 py-0 sm:py-4 overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-sm p-5 sm:p-6 sm:my-8 max-h-[min(92dvh,640px)] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pb-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[17px] font-bold text-[#101828] font-[lora] tracking-tight">
+                {editingAddOnIndex !== null ? 'Edit add-on' : 'Add add-on'}
               </h3>
-              <button
-                onClick={() => {
-                  setShowAddOnModal(false);
-                  setEditingAddOn(null);
-                  setAddOnForm({
-                    name: '',
-                    description: '',
-                    price: '',
-                    durationHours: '',
-                    durationMinutes: '',
-                  });
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+              <button type="button" onClick={() => { setShowAddOnModal(false); resetAddOnForm(); }} className="p-2 rounded-full hover:bg-gray-100">
+                <X className="w-5 h-5 text-[#6C6C6C]" />
               </button>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Add-on name
-                </label>
-                <input
-                  type="text"
-                  value={addOnForm.name}
-                  onChange={(e) =>
-                    setAddOnForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 outline-none"
-                  placeholder="Name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description (optional)
-                </label>
-                <Textarea
-                  value={addOnForm.description}
-                  onChange={(e) =>
-                    setAddOnForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                  placeholder="Describe the add-on"
-                />
-              </div>
-
-              {/* Price */}
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price
-                </label>
-
-                <div>
-                  <span className="absolute left-4 top-1/2 -translate-y-[0%] text-gray-600 font-medium">
-                    {formData.currency}
-                  </span>
-                  <input
-                    type="text"
-                    value={addOnForm.price}
-                    onChange={(e) =>
-                      setAddOnForm((prev) => ({
-                        ...prev,
-                        price: e.target.value,
-                      }))
-                    }
-                    min="0"
-                    step="0.01"
+            <div className="space-y-5">
+              <Input
+                label="Add-on name"
+                value={currentAddOn.name}
+                onChange={(e) => setCurrentAddOn((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Add-on name"
+              />
+              <Textarea
+                label="Description (optional)"
+                value={currentAddOn.description}
+                onChange={(e) => setCurrentAddOn((prev) => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                placeholder="Describe the add-on"
+              />
+              <div className="min-w-0">
+                <label className="block text-sm sm:text-[14px] font-medium text-[#0A0A0A] mb-1">Price</label>
+                <div className="relative min-w-0">
+                  <Input
+                    value={currentAddOn.price === 0 ? '' : currentAddOn.price.toString()}
+                    onChange={(e) => setCurrentAddOn((prev) => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                     placeholder="0.00"
-                    className="w-full pl-16 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 outline-none"
+                    className="pl-14 min-w-0"
+                    type="tel"
                   />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#6C6C6C] pointer-events-none">{currency}</span>
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Duration
-                </label>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <input
+                <label className="block text-sm sm:text-[14px] font-medium text-[#0A0A0A] mb-1">Duration</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      label="Hours"
                       type="number"
-                      value={addOnForm.durationHours}
-                      onChange={(e) =>
-                        setAddOnForm((prev) => ({
-                          ...prev,
-                          durationHours: e.target.value,
-                        }))
-                      }
-                      min="0"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 outline-none"
-                      placeholder="Hours"
+                      value={currentAddOn.duration.hours === 0 ? '' : currentAddOn.duration.hours.toString()}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        setCurrentAddOn((prev) => ({ ...prev, duration: { ...prev.duration, hours: v } }));
+                      }}
+                      min={0}
+                      placeholder="0"
                     />
                   </div>
-                  <div className="flex-1">
-                    <input
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      label="Minutes"
                       type="number"
-                      value={addOnForm.durationMinutes}
-                      onChange={(e) =>
-                        setAddOnForm((prev) => ({
-                          ...prev,
-                          durationMinutes: e.target.value,
-                        }))
-                      }
-                      min="0"
-                      max="59"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 outline-none"
-                      placeholder="Minutes"
+                      value={currentAddOn.duration.minutes === 0 ? '' : currentAddOn.duration.minutes.toString()}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        if (v > 59) return;
+                        setCurrentAddOn((prev) => ({ ...prev, duration: { ...prev.duration, minutes: v } }));
+                      }}
+                      min={0}
+                      max={59}
+                      placeholder="0"
                     />
                   </div>
                 </div>
               </div>
-              <button
-                onClick={handleAddOn}
-                className="w-full px-6 py-3 bg-[#60983C] text-white rounded-lg hover:bg-[#4d7a30]"
-              >
-                Save add-on
-              </button>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Button variant="cancel" size="full" onClick={() => { setShowAddOnModal(false); resetAddOnForm(); }}>
+                    Cancel
+                  </Button>
+                </div>
+                <div className="flex-1">
+                  <Button
+                    variant="default"
+                    size="full"
+                    onClick={handleSaveAddOn}
+                    loading={isCreatingAddOn || isUpdatingAddOn}
+                  >
+                    {editingAddOnIndex !== null ? 'Update' : 'Add'}
+                  </Button>
+                </div>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add-on Actions Modal */}
+      {showAddOnActionsModal && editingAddOnIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg p-5 sm:p-6 pb-[max(2rem,env(safe-area-inset-bottom,0px))] sm:pb-8 max-h-[85dvh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddOnActionsModal(false);
+                setShowAddOnModal(true);
+              }}
+              className="w-full flex items-center gap-4 py-4 border-b border-[#F0F0F0]"
+            >
+              <svg className="w-5 h-5 text-[#344054]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span className="text-[15px] font-medium text-[#101828]">Edit Add-on</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRemoveAddOn(editingAddOnIndex)}
+              disabled={isDeletingAddOn}
+              className="w-full flex items-center gap-4 py-4 mb-4"
+            >
+              <svg className="w-5 h-5 text-[#D92D20]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span className="text-[15px] font-medium text-[#D92D20]">
+                {isDeletingAddOn ? 'Removing...' : 'Remove Add-on'}
+              </span>
+            </button>
+            <Button variant="cancel" size="full" onClick={() => setShowAddOnActionsModal(false)}>
+              Close
+            </Button>
           </div>
         </div>
       )}

@@ -1,41 +1,44 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-import { GoHome } from 'react-icons/go';
-import { BsChatDots } from 'react-icons/bs';
-import { IoNotificationsOutline } from 'react-icons/io5';
-import { BsCalendar3 } from 'react-icons/bs';
-import { MdOutlineTravelExplore } from 'react-icons/md';
-import { IoSettingsOutline } from 'react-icons/io5';
-import { BsShop } from 'react-icons/bs';
 import Logo from '@/assets/images/green-logo.svg';
+import homeIcon from '@/assets/icons/home.png';
+import inboxIcon from '@/assets/icons/inbox.png';
+import bookingIcon from '@/assets/icons/booking.png';
+import storeIcon from '@/assets/icons/booking.png';
+import glitfinderIcon from '@/assets/icons/glitfinder.png';
+import NotificationIcon from '@/assets/icons/notification.png';
+import SettingsIcon from '@/assets/icons/settings.png';
 
-const SideNav = () => {
+export type SideNavProps = {
+  /** When true, slide-in drawer is visible (screens below `lg`). */
+  mobileOpen?: boolean;
+  /** Close drawer after navigation or backdrop tap. */
+  onCloseMobile?: () => void;
+};
+
+const SideNav = ({ mobileOpen = false, onCloseMobile }: SideNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector((state: RootState) => state.auth.user);
 
   const baseMenuItems = [
-    { label: 'Home', icon: GoHome, path: '/' },
-    { label: 'Inbox', icon: BsChatDots, path: '/inbox' },
-    {
-      label: 'Notifications',
-      icon: IoNotificationsOutline,
-      path: '/notifications',
-    },
-    { label: 'Bookings', icon: BsCalendar3, path: '/bookings' },
+    { label: 'Home', icon: homeIcon, path: '/' },
+    { label: 'Inbox', icon: inboxIcon, path: '/inbox' },
+    { label: 'Notifications', icon: NotificationIcon, path: '/notifications' },
+    { label: 'Bookings', icon: bookingIcon, path: '/bookings' },
   ];
 
   const vendorMenuItems = [
-    { label: 'Store', icon: BsShop, path: '/vendor/store' },
+    { label: 'Store', icon: storeIcon, path: '/vendor/store' },
+    { label: 'Services', icon: storeIcon, path: '/vendor/services' },
   ];
 
   const commonMenuItems = [
-    { label: 'Glitfinder', icon: MdOutlineTravelExplore, path: '/glitfinder' },
-    { label: 'Settings', icon: IoSettingsOutline, path: '/settings' },
+    { label: 'Glitfinder', icon: glitfinderIcon, path: '/glitfinder' },
+    { label: 'Settings', icon: SettingsIcon, path: '/settings' },
   ];
 
-  // Show Store menu for vendors
   const menuItems = user?.activeRole === 'vendor'
     ? [...baseMenuItems, ...vendorMenuItems, ...commonMenuItems]
     : [...baseMenuItems, ...commonMenuItems];
@@ -47,39 +50,59 @@ const SideNav = () => {
     return location.pathname.startsWith(path);
   };
 
+  const go = (path: string) => {
+    navigate(path);
+    onCloseMobile?.();
+  };
+
   return (
-    <div className="fixed left-0 h-full w-[245px] z-10 bg-white flex flex-col py-8 px-6">
-      {/* Logo */}
-      <div className="mb-12 cursor-pointer" onClick={() => navigate('/')}>
-        <img src={Logo} alt="Logo" className="w-10 h-10" />
+    <>
+      {/* Mobile overlay */}
+      {mobileOpen ? (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={() => onCloseMobile?.()}
+        />
+      ) : null}
+
+      <aside
+        className={`fixed left-0 top-0 h-full w-[min(280px,88vw)] sm:w-[245px] z-50 lg:z-10 bg-white flex flex-col py-6 sm:py-8 px-4 sm:px-6 border-r border-[#F0F0F0] transition-transform duration-200 ease-out shadow-xl lg:shadow-none ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}
+        aria-hidden={false}
+      >
+      <div className="mb-6 sm:mb-8 flex items-center justify-between gap-2">
+        <div className="cursor-pointer" onClick={() => go('/')}>
+          <img src={Logo} alt="Logo" className="w-8" />
+        </div>
+        <button
+          type="button"
+          className="lg:hidden p-2 rounded-lg hover:bg-gray-50 text-[#0A0A0A] -mr-1"
+          aria-label="Close navigation"
+          onClick={() => onCloseMobile?.()}
+        >
+          <span className="text-2xl leading-none">&times;</span>
+        </button>
       </div>
 
-      {/* Menu Items */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1 sm:gap-2 overflow-y-auto flex-1 min-h-0 pb-6">
         {menuItems.map((item) => {
-          const Icon = item.icon;
           const active = isActive(item.path);
 
           return (
             <div
               key={item.label}
-              onClick={() => navigate(item.path)}
-              className={`flex items-center gap-4 py-3 px-4 rounded-xl cursor-pointer transition-all ${
-                active ? 'bg-[#E7F6EC]' : 'hover:bg-gray-50'
+              onClick={() => go(item.path)}
+              className={`flex items-center gap-3 py-3 px-4 rounded-xl cursor-pointer transition-all ${
+                active ? 'bg-[#F2FFEC]' : 'hover:bg-gray-50'
               }`}
             >
-              <Icon
-                size={20}
-                className={`${
-                  active ? 'text-[#3D7B22]' : 'text-[#6C6C6C]'
-                } transition-colors`}
-              />
+                <img src={item.icon} alt="" className="w-[18px] shrink-0" />
               <span
-                className={`text-[16px] font-normal  ${
-                  active ? 'text-[#3D7B22]' : 'text-[#344054]'
-                } ${
-                  item.label === 'Notifications' && active ? 'underline' : ''
-                }`}
+                className={`text-[14px] font-medium ${
+                  active ? 'text-primary' : 'text-[#6C6C6C]'
+                } ${item.label === 'Notifications' && active ? '' : ''}`}
               >
                 {item.label}
               </span>
@@ -87,7 +110,8 @@ const SideNav = () => {
           );
         })}
       </div>
-    </div>
+      </aside>
+    </>
   );
 };
 

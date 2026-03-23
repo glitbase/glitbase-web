@@ -11,7 +11,7 @@ type GoogleAuthProps = {
     role?: string;
 }
 
-const GoogleAuth = ({isSignup, role}: GoogleAuthProps) => {
+const GoogleAuth = ({ role }: GoogleAuthProps) => {
 
   const [googleAuth] = useGoogleAuthMutation();
   const navigate = useNavigate();
@@ -45,11 +45,11 @@ const GoogleAuth = ({isSignup, role}: GoogleAuthProps) => {
   const authenticateWithGoogle = async(idToken: string | undefined) => {
     try {
       const { data } = await googleAuth({
-        isSignup,
+        // isSignup,
         role,
         idToken,
-        countryName: 'Nigeria',
-        countryCode: 'NG'
+        // countryName: 'Nigeria',
+        // countryCode: 'NG'
     }).unwrap();
 
     const token = data?.tokens?.accessToken || data.token;
@@ -83,14 +83,16 @@ const GoogleAuth = ({isSignup, role}: GoogleAuthProps) => {
 
 
   return (
-    <div className="my-3">
+    <div className="my-3 w-full flex justify-center min-w-0 [&>div]:w-full [&>div]:max-w-full [&_iframe]:max-w-full">
     <GoogleLogin
         onSuccess={(credentialResponse) => initializeGoogleAuth(credentialResponse)}
         onError={() => {
           toast.error('Google sign-in failed');
         }}
-        text={isSignup ? 'signup_with' : 'signin_with'}
+        text={'continue_with'}
         logo_alignment='center'
+        shape='pill'
+        theme='filled_black'
       />
     </div>
   )

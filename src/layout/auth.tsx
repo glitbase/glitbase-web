@@ -43,6 +43,8 @@ const AuthLayout = ({
       '/auth/signup/interests',    // Interests selection for customers
       '/auth/signup/verify',       // OTP verification in progress
       '/auth/forgot-password',     // Password reset flow
+      '/auth/reset-password',      // Reset password page
+      '/auth/reset-success',       // Reset password success page
     ];
 
     // Check if current route is allowed for authenticated users
@@ -67,7 +69,7 @@ const AuthLayout = ({
       <PageLoader />
     </div>
   ) : (
-    <div className="flex flex-col w-full overflow-hidden justify-center items-center h-screen relative xl:flex-row">
+    <div className="flex flex-col w-full overflow-hidden justify-center items-center min-h-[100dvh] min-h-screen h-auto xl:h-screen xl:min-h-0 relative xl:flex-row">
       <div className="hidden xl:flex xl:w-[420px] xl:max-w-[32rem] xl:h-full relative xl:overflow-hidden bg-[#F3EDE1] shadow-sm">
         <div className="flex flex-col justify-between h-full w-full  py-10">
           <div className="mt-[-3rem]">
@@ -76,17 +78,17 @@ const AuthLayout = ({
           <div className="flex-1 flex flex-col justify-center items-center mt-[-4rem]">
             <img src={Spiral} alt="spiral" className="w-[full] h-full" />
           </div>
-          <div className="mt-1 px-10">
-            <p className="font-[lora] font-semibold text-[1.9rem] leading-[2.4rem] text-[#1D2739]">
+          <div className="mt-1 px-8 xl:px-10">
+            <p className="font-[lora] font-semibold text-[1.5rem] xl:text-[1.9rem] leading-snug xl:leading-[2.4rem] text-[#0A0A0A] tracking-tight">
               Your hub for <br />{' '}
               <span className="text-[#4C9A2A] italic">beauty</span>, lifestyle
               and inspiration
             </p>
-            <p className="mt-6 text-[0.95rem] text-[#3B3B3B]">
+            <p className="mt-4 xl:mt-6 font-medium text-[0.9rem] xl:text-[0.95rem] text-[#3B3B3B]">
               Our founder wishes you a fantastic experience as you are about to
               use glitbase
             </p>
-            <p className="mt-8 text-[1rem] text-[#101928] font-[lora]">
+            <p className="mt-8 text-[1rem] text-[#101928] font-[lora] font-medium">
               Founder.
             </p>
             <img

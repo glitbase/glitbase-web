@@ -1,19 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react';
+import { useState } from "react";
 import {
   useGetStoreReviewsQuery,
   useGetStoreReviewMetricsQuery,
-} from '@/redux/vendor';
+} from "@/redux/vendor";
 
 interface ReviewsProps {
   storeId: string;
+  isSettings?: boolean;
 }
 
-const Reviews = ({ storeId }: ReviewsProps) => {
+const Reviews = ({ storeId, isSettings = false }: ReviewsProps) => {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<
-    'latest' | 'oldest' | 'highest_rating' | 'lowest_rating'
-  >('latest');
+    "latest" | "oldest" | "highest_rating" | "lowest_rating"
+  >("latest");
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showMetricsModal, setShowMetricsModal] = useState(false);
 
@@ -32,14 +33,14 @@ const Reviews = ({ storeId }: ReviewsProps) => {
   const meta = data?.meta;
 
   const sortOptions = [
-    { label: 'Latest', value: 'latest' },
-    { label: 'Oldest', value: 'oldest' },
-    { label: 'Highest rating', value: 'highest_rating' },
-    { label: 'Lowest rating', value: 'lowest_rating' },
+    { label: "Latest", value: "latest" },
+    { label: "Oldest", value: "oldest" },
+    { label: "Highest rating", value: "highest_rating" },
+    { label: "Lowest rating", value: "lowest_rating" },
   ];
 
   const renderStars = (rating: number) => {
-    return [...Array(5)].map((_, index) => (
+    return [...Array(rating)].map((_, index) => (
       // <svg
       //   key={index}
       //   className={`w-5 h-5 ${
@@ -56,8 +57,8 @@ const Reviews = ({ storeId }: ReviewsProps) => {
         viewBox="0 0 16 16"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className={`w-5 h-5 ${
-          index < rating ? 'text-yellow-400' : 'text-gray-300'
+        className={`w-3 h-3 ${
+          index < rating ? "text-yellow-400" : "text-gray-300"
         }`}
       >
         <g clip-path="url(#clip0_94_250202)">
@@ -83,17 +84,17 @@ const Reviews = ({ storeId }: ReviewsProps) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays === 0) return "Today";
+    if (diffInDays === 1) return "Yesterday";
     if (diffInDays < 7) return `${diffInDays}d`;
     if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w`;
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -126,19 +127,19 @@ const Reviews = ({ storeId }: ReviewsProps) => {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Metrics and Reviews Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`grid ${isSettings ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
         {/* Left Side - Metrics Summary */}
         {metrics && (
-          <div className="md:col-span-1">
+          <div className="">
             <div className="space-y-3">
               {[5, 4, 3, 2, 1].map((rating) => (
                 <div key={rating} className="flex items-center gap-3">
-                  <span className="text-base font-medium text-gray-900 w-3">
+                  <span className="text-base font-medium text-[#0A0A0A] text-[14px] w-3">
                     {rating}
                   </span>
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-[#EDEDED] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#03593E]"
+                      className="h-full bg-[#03593E] rounded-full"
                       style={{
                         width: `${
                           metrics.ratingsDistribution[
@@ -148,7 +149,7 @@ const Reviews = ({ storeId }: ReviewsProps) => {
                       }}
                     />
                   </div>
-                  <span className="text-sm text-gray-600 w-12 text-right">
+                  <span className="text-sm text-[#9D9D9D] text-[14px] font-medium w-12">
                     {metrics.ratingsDistribution[
                       rating as keyof typeof metrics.ratingsDistribution
                     ] || 0}
@@ -161,23 +162,23 @@ const Reviews = ({ storeId }: ReviewsProps) => {
         )}
 
         {/* Right Side - Reviews List */}
-        <div className="md:col-span-2">
+        <div className="">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {meta?.total || 0} review{(meta?.total || 0) !== 1 ? 's' : ''}
+            <h2 className="text-[15px] font-medium text-[#6C6C6C] -mt-4">
+              {meta?.total || 0} review{(meta?.total || 0) !== 1 ? "s" : ""}
             </h2>
             <div className="relative">
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
+                className="flex items-center space-x-2 px-3 py-2 bg-[#F0F0F0] rounded-full hover:bg-gray-50 text-[#3B3B3B] text-[14px] font-medium"
               >
-                <span className="text-gray-700">
+                <span className="text-[#3B3B3B] text-[13px] font-medium">
                   {sortOptions.find((opt) => opt.value === sortBy)?.label}
                 </span>
                 <svg
                   className={`w-4 h-4 text-gray-600 transition-transform ${
-                    showSortMenu ? 'rotate-180' : ''
+                    showSortMenu ? "rotate-180" : ""
                   }`}
                   fill="none"
                   stroke="currentColor"
@@ -207,7 +208,7 @@ const Reviews = ({ storeId }: ReviewsProps) => {
                           setShowSortMenu(false);
                           setPage(1);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
+                        className="block w-full text-left px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
                       >
                         <div className="flex items-center justify-between">
                           <span>{option.label}</span>
@@ -253,12 +254,11 @@ const Reviews = ({ storeId }: ReviewsProps) => {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No reviews yet
+              <h3 className="text-[20px] font-bold text-[#0A0A0A] mb-2 font-[lora] tracking-tight">
+                What people say
               </h3>
-              <p className="text-gray-500">
-                Your reviews will appear here once customers start leaving
-                feedback
+              <p className="text-[#6C6C6C] text-[14px] font-medium">
+                Customer feedback and testimonials will appear here
               </p>
             </div>
           ) : (
@@ -269,10 +269,10 @@ const Reviews = ({ storeId }: ReviewsProps) => {
                     key={review.id}
                     className="border-b border-gray-200 pb-4 last:border-0"
                   >
-                    <div className="flex gap-4">
+                    <div className="flex gap-3">
                       {/* Reviewer Avatar */}
                       <div className="flex-shrink-0">
-                        {review.user.profileImageUrl ? (
+                        {review?.user?.profileImageUrl ? (
                           <img
                             src={review.user.profileImageUrl}
                             alt={`${review.user.firstName} ${review.user.lastName}`}
@@ -280,9 +280,9 @@ const Reviews = ({ storeId }: ReviewsProps) => {
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-lg font-medium text-gray-600">
-                              {review.user.firstName.charAt(0)}
-                              {review.user.lastName.charAt(0)}
+                            <span className="text-[15px] font-medium text-[#0A0A0A]">
+                              {review?.user?.firstName?.charAt(0)}
+                              {review?.user?.lastName?.charAt(0)}
                             </span>
                           </div>
                         )}
@@ -291,20 +291,20 @@ const Reviews = ({ storeId }: ReviewsProps) => {
                       {/* Review Content */}
                       <div className="flex-1 min-w-0">
                         <div className="mb-2">
-                          <h4 className="text-base font-semibold text-gray-900">
-                            {review.user.firstName} {review.user.lastName}
+                          <h4 className="text-[15px] font-medium text-[#0A0A0A]">
+                            {review?.user?.firstName} {review?.user?.lastName}
                           </h4>
                           <div className="flex items-center gap-2 mt-1">
                             <div className="flex">
                               {renderStars(review.rating)}
                             </div>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-[12px] text-[#9D9D9D] font-medium">
                               {formatDate(review.createdAt)}
                             </span>
                           </div>
                         </div>
                         {review.message && (
-                          <p className="text-gray-700 text-sm leading-relaxed">
+                          <p className="text-[#3B3B3B] text-[14px] font-medium leading-relaxed">
                             {review.message}
                           </p>
                         )}
@@ -409,7 +409,7 @@ const Reviews = ({ storeId }: ReviewsProps) => {
                     {Math.round(
                       metrics.ratingsDistribution[
                         rating as keyof typeof metrics.ratingsDistribution
-                      ] || 0
+                      ] || 0,
                     )}
                     %
                   </span>

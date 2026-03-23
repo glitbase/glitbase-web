@@ -2,7 +2,7 @@ import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const inputVariants = cva(
-  'flex min-h-[40px] w-full rounded-m  !bg-[#FAFAFA] px-3 py-1 placeholder:text-[12px] text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  'flex min-h-[50px] w-full rounded-lg !bg-[#FAFAFA] text-[#3B3B3B] font-medium px-3 py-1 placeholder:text-[14px] text-[14px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#9D9D9D] placeholder:font-medium focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -34,7 +34,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="relative">
         {label && (
           <label
-            className="mb-1 block text-[12px] font-medium text-[#1f1f1f]"
+            className="mb-1 block text-[14px] font-medium text-[#0A0A0A] font-medium"
             htmlFor={props.id}
           >
             {label}

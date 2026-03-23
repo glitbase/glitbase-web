@@ -9,6 +9,7 @@ import NotificationsTab from './tabs/NotificationsTab';
 import PaymentBillingsTab from './tabs/PaymentBillingsTab';
 import BusinessSettingsTab from './tabs/BusinessSettingsTab';
 import OperationsTab from './tabs/OperationsTab';
+import CustomerSupport from './tabs/CustomerSupport';
 
 type TabType = {
   id: string;
@@ -52,6 +53,11 @@ const Settings = () => {
           label: 'Notifications',
           component: <NotificationsTab />,
         },
+        {
+          id: 'customer-support',
+          label: 'Customer support',
+          component: <CustomerSupport />,
+        },
       ];
     } else {
       // Regular user sees limited tabs
@@ -72,6 +78,11 @@ const Settings = () => {
           label: 'Notifications',
           component: <NotificationsTab />,
         },
+        {
+          id: 'customer-support',
+          label: 'Customer support',
+          component: <CustomerSupport />,
+        },
       ];
     }
   }, [isVendor]);
@@ -89,22 +100,23 @@ const Settings = () => {
   const activeTabContent = tabs.find((tab) => tab.id === activeTab)?.component;
 
   return (
-    <HomeLayout isLoading={false} showNavBar={false}>
-      <div className="min-h-screen bg-white">
-        <div className="max-w-[1200px] mx-auto px-6 py-8">
+    <HomeLayout isLoading={false} showNavBar={true} showSearch={false}>
+      <div className="min-h-[100dvh] min-h-screen bg-white w-full min-w-0 -mt-12 md:-mt-0">
+        <div className="w-full max-w-[960px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-5 sm:py-6 md:py-8 pb-8 sm:pb-10 min-w-0">
           {/* Header */}
-          <h1 className="text-[32px] font-semibold text-[#101828] mb-8">
+          <p className="text-[1.1rem] sm:text-[1.5rem] md:text-2xl tracking-tight font-semibold text-[#1D2739] font-[lora] mb-4 sm:mb-6 md:mb-8">
             Settings
-          </h1>
+          </p>
 
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200 mb-8">
-            <div className="flex gap-8">
+          {/* Tab Navigation — horizontal scroll on narrow screens */}
+          <div className="mb-4 sm:mb-6 -mx-1 px-1">
+            <div className="flex overflow-x-auto overflow-y-hidden scrollbar-hide gap-4 sm:gap-6 md:gap-8 pb-0 touch-pan-x snap-x snap-mandatory">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`pb-4 text-[16px] font-medium relative transition-colors ${
+                  className={`pb-2.5 sm:pb-2 shrink-0 snap-start text-left text-[14px] sm:text-[13px] md:text-[15px] font-semibold relative tracking-tight transition-colors touch-manipulation whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'text-[#343226]'
                       : 'text-[#9D9D9D] hover:text-[#6C6C6C]'
@@ -112,7 +124,7 @@ const Settings = () => {
                 >
                   {tab.label}
                   {activeTab === tab.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-[#4C9A2A]" />
+                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#4C9A2A] rounded-full" />
                   )}
                 </button>
               ))}
@@ -120,7 +132,7 @@ const Settings = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="py-6">{activeTabContent}</div>
+          <div className="py-4 sm:py-6 min-w-0 overflow-x-hidden">{activeTabContent}</div>
         </div>
       </div>
     </HomeLayout>

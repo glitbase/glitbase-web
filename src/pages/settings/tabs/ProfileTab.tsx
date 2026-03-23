@@ -6,15 +6,19 @@ import {
   useUpdateUserProfileMutation,
   useUserProfileQuery,
 } from '@/redux/auth';
-import { FiEdit2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useFileUploadMutation } from '@/redux/app';
+import { FiEdit2 } from 'react-icons/fi';
 import {
   DeleteAccountModal,
   FeedbackModal,
   VerifyPasswordModal,
 } from '@/components/Modal/DeleteAccount';
 import noProfile from '@/assets/images/noProfile.svg';
+import { SquarePen } from 'lucide-react';
+import { CountryDropdown, countries, type Country } from '@/components/auth/CountryDropdown';
+import { Input } from '@/components/Inputs/TextInput';
+import { Button } from '@/components/Buttons';
 
 const ProfileTab = () => {
   const user = useAppSelector((state) => state.auth.user);
@@ -25,7 +29,7 @@ const ProfileTab = () => {
 
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [profileImage, setProfileImage] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -38,37 +42,36 @@ const ProfileTab = () => {
 
   useEffect(() => {
     if (user?.phoneNumber) {
-      // Extract country code and phone number
-      // Match +234 0938277384 pattern (country code is 1-4 digits after +)
       const phoneMatch = user.phoneNumber.match(/^(\+\d{1,3})(.*)$/);
       if (phoneMatch) {
-        setCountryCode(phoneMatch[1]); // e.g., "+234"
-        setPhoneNumber(phoneMatch[2].trim()); // e.g., "0938277384"
+        setPhoneNumber(phoneMatch[2].trim());
+        const dial = phoneMatch[1];
+        const country = countries.find((c) => c.dialCode === dial) ?? null;
+        setSelectedCountry(country);
       } else {
-        // If no country code pattern is found, treat entire number as phone number
         setPhoneNumber(user.phoneNumber);
       }
+    } else if (user?.countryCode) {
+      const country = countries.find((c) => c.code === user.countryCode) ?? null;
+      setSelectedCountry(country);
     }
     if (user?.profileImageUrl) {
       setProfileImage(user.profileImageUrl);
     }
   }, [user]);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Only allow numbers and specific formatting characters
-    if (/^\d*$/.test(value)) {
-      setPhoneNumber(value);
-    }
-  };
-
   const handleSavePhone = async () => {
+    if (!selectedCountry) {
+      toast.error('Please select a country');
+      return;
+    }
     try {
       await updateProfile({
-        phoneNumber: `${countryCode} ${phoneNumber}`,
+        phoneNumber: `${selectedCountry.dialCode}${phoneNumber}`,
+        countryCode: selectedCountry.code,
+        countryName: selectedCountry.name,
       }).unwrap();
 
-      // Refetch the profile to update the UI immediately
       await refetchProfile();
 
       toast.success('Phone number updated successfully');
@@ -82,17 +85,16 @@ const ProfileTab = () => {
     if (user?.phoneNumber) {
       const phoneMatch = user.phoneNumber.match(/^(\+\d{1,4})(.*)$/);
       if (phoneMatch) {
-        setCountryCode(phoneMatch[1]);
         setPhoneNumber(phoneMatch[2].trim());
+        const country = countries.find((c) => c.dialCode === phoneMatch[1]) ?? null;
+        setSelectedCountry(country);
       }
     }
+    if (user?.countryCode) {
+      const country = countries.find((c) => c.code === user.countryCode) ?? null;
+      setSelectedCountry(country);
+    }
     setIsEditingPhone(false);
-  };
-
-  // Get country flag URL based on country code
-  const getCountryFlag = (code: string) => {
-    const countryCodeLower = user?.countryCode?.toLowerCase() || 'ng';
-    return `https://flagcdn.com/w20/${countryCodeLower}.png`;
   };
 
   // Handle profile picture upload
@@ -180,18 +182,16 @@ const ProfileTab = () => {
     setDeletionFeedback('');
   };
 
-  console.log(countryCode);
-
   return (
     <div className="max-w-[600px]">
       {/* Profile details heading */}
-      <h2 className="text-[20px] font-semibold text-[#101828] mb-6">
+      <h2 className="text-[16px] md:text-[18px] font-semibold text-[#101828] mb-6">
         Profile details
       </h2>
 
       {/* Profile Picture */}
       <div className="mb-8">
-        <div className="relative w-[100px] h-[100px]">
+        <div className="relative w-[80px] h-[80px] md:w-[100px] md:h-[100px]">
           <img
             src={profileImage || noProfile}
             alt="Profile"
@@ -200,7 +200,7 @@ const ProfileTab = () => {
           <button
             onClick={handleProfilePictureClick}
             disabled={isUploadingImage}
-            className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+            className="absolute bottom-0 right-0 w-6 h-6 md:w-8 md:h-8 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
           >
             {isUploadingImage ? (
               <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
@@ -251,13 +251,13 @@ const ProfileTab = () => {
       </div>
 
       {/* Full name */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
+      <div className="mb-4 pb-4 border-b border-gray-200">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <label className="block text-[14px] font-medium text-[#344054] mb-2">
+            <label className="block text-[13px] md:text-[14px] font-medium text-[#0A0A0A] mb-1 tracking-tight">
               Full name
             </label>
-            <p className="text-[16px] text-[#6C6C6C]">
+            <p className="text-[14px] font-medium text-[#6C6C6C]">
               {user?.firstName} {user?.lastName}
             </p>
           </div>
@@ -268,13 +268,13 @@ const ProfileTab = () => {
       </div>
 
       {/* Email address */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
+      <div className="mb-4 pb-4 border-b border-gray-200">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <label className="block text-[14px] font-medium text-[#344054] mb-2">
+            <label className="block text-[13px] md:text-[14px] font-medium text-[#0A0A0A] mb-1 tracking-tight">
               Email address
             </label>
-            <p className="text-[16px] text-[#6C6C6C]">{user?.email}</p>
+            <p className="text-[14px] font-medium text-[#6C6C6C]">{user?.email}</p>
           </div>
           {/* <button className="text-gray-400 hover:text-gray-600">
             <FiEdit2 size={18} />
@@ -283,54 +283,64 @@ const ProfileTab = () => {
       </div>
 
       {/* Phone number */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
+      <div className="mb-4 pb-4 border-b border-gray-200">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <label className="block text-[14px] font-medium text-[#344054] mb-2">
+            <label className="block text-[13px] md:text-[14px] font-medium text-[#0A0A0A] mb-1 tracking-tight">
               Phone number
             </label>
             {isEditingPhone ? (
-              <div className="mt-2">
-                <div className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg bg-white">
-                  <img
-                    src={getCountryFlag(user?.countryCode)}
-                    alt={user?.countryName || 'Country'}
-                    className="w-5 h-4 flex-shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={countryCode}
-                    disabled
-                    className="w-[60px] bg-transparent outline-none text-[16px] text-[#98A2B3] cursor-not-allowed"
-                  />
-                  <input
-                    type="text"
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    className="flex-1 bg-transparent outline-none text-[16px] text-[#101828]"
-                    placeholder="0938277384"
-                    autoFocus
-                  />
+              <div className="mt-2 space-y-4">
+                {/* <CountryDropdown
+                  selectedCountry={selectedCountry}
+                  onSelectCountry={setSelectedCountry}
+                /> */}
+                <div>
+                  <div className="flex items-center h-[50px] rounded-md bg-[#FAFAFA] rounded-lg focus-within:border-transparent focus-within:ring-0">
+                    <div className="flex items-center gap-2 px-3 py-2 border-r border-gray-200 bg-gray-50 rounded-l-lg h-full">
+                      {selectedCountry ? (
+                        <>
+                          <img src={selectedCountry.flag} alt={selectedCountry.name} className="w-5 h-5" />
+                          <span className="text-sm text-[#3B3B3B] font-medium">
+                            {selectedCountry.dialCode}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm text-[#9D9D9D]">+</span>
+                      )}
+                    </div>
+                    <Input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        setPhoneNumber(value);
+                      }}
+                      placeholder="Phone Number"
+                      maxLength={11}
+                      className="flex-1 px-3 py-2 border-none focus:ring-0 focus:outline-none bg-transparent h-full"
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={handleCancelPhone}
                     disabled={isLoading}
-                    className="px-4 py-2 text-[14px] font-medium text-[#344054] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    className="px-4 py-2 text-[12px] font-semibold text-[#3B3B3B] bg-[#F0F0F0] rounded-full hover:bg-gray-50 disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSavePhone}
                     disabled={isLoading}
-                    className="px-4 py-2 text-[14px] font-medium text-white bg-[#3D7B22] rounded-lg hover:bg-[#2d5c19] disabled:opacity-50"
+                    className="px-4 py-2 text-[12px] font-semibold text-white bg-primary rounded-full hover:bg-[#2d5c19] disabled:opacity-50"
                   >
                     {isLoading ? 'Saving...' : 'Save changes'}
                   </button>
                 </div>
               </div>
             ) : (
-              <p className="text-[16px] text-[#6C6C6C]">
+              <p className="text-[14px] font-medium text-[#6C6C6C]">
                 {user?.phoneNumber || 'No phone number'}
               </p>
             )}
@@ -340,20 +350,20 @@ const ProfileTab = () => {
               onClick={() => setIsEditingPhone(true)}
               className="text-gray-400 hover:text-gray-600"
             >
-              <FiEdit2 size={18} />
+              <SquarePen className='mt-3' size={18} color='#6C6C6C' />
             </button>
           )}
         </div>
       </div>
 
       {/* Country */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
+      <div className="mb-4 pb-4 border-b border-gray-200">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <label className="block text-[14px] font-medium text-[#344054] mb-2">
+            <label className="block text-[13px] md:text-[14px] font-medium text-[#0A0A0A] mb-1 tracking-tight">
               Country
             </label>
-            <p className="text-[16px] text-[#6C6C6C]">
+            <p className="text-[14px] font-medium text-[#6C6C6C]">
               {user?.countryName || 'Not specified'}
             </p>
           </div>
@@ -364,21 +374,18 @@ const ProfileTab = () => {
       </div>
 
       {/* Delete account */}
-      <div className="mt-8">
-        <h3 className="text-[18px] font-semibold text-[#101828] mb-2">
+      <div className="mt-6">
+        <h3 className="text-[14px] md:text-[18px] font-semibold text-[#101828] mb-2">
           Delete account
         </h3>
-        <p className="text-[14px] text-[#6C6C6C] mb-4">
+        <p className="text-[13px] md:text-[14px] text-[#3B3B3B] font-medium mb-4">
           By deleting your account, you will permanently lose access to all
           providers you've connected with and won't be able to recover any of
           this information.
         </p>
-        <button
-          onClick={handleDeleteAccountClick}
-          className="px-6 py-2.5 text-[14px] font-medium text-white bg-[#D92D20] rounded-lg hover:bg-[#b91c1c]"
-        >
+        <Button variant="destructive" className='!px-6 mt-4' onClick={handleDeleteAccountClick} >
           Delete account
-        </button>
+        </Button>
       </div>
 
       {/* Delete Account Modals */}

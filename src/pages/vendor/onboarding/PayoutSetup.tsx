@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { nigerianBanks } from '@/utils/nigerianBanks';
 import { ukBanks } from '@/utils/ukBanks';
 import AuthLayout from '@/layout/auth';
+import { IoCloseOutline } from 'react-icons/io5';
 
 const PayoutSetup = () => {
   const navigate = useNavigate();
@@ -126,13 +127,13 @@ const PayoutSetup = () => {
       <VendorOnboardingLayout progress={100} currentStep={7}>
         <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
           <div className="space-y-2 flex flex-col items-start w-full">
-            <Typography
+          <Typography
               variant="heading"
-              className="text-left !text-[2rem] font-medium font-[lora]"
+              className="text-left !text-[1.7rem] font-bold font-[lora] text-[#0A0A0A]"
             >
               Set up payout information
             </Typography>
-            <p className="text-left font-medium text-[1rem] text-[#667185] !mt-3">
+            <p className="text-left font-medium text-[1rem] text-[#6C6C6C] !mt-2">
               Add your bank account details to receive payments
             </p>
           </div>
@@ -149,7 +150,7 @@ const PayoutSetup = () => {
               label="Full name"
               placeholder="Enter your full name"
               required
-              error={errors.fullName}
+              // error={errors.fullName}
             />
           </div>
 
@@ -166,12 +167,9 @@ const PayoutSetup = () => {
               label="Account number"
               placeholder={`Enter ${accountNumberLength}-digit account number`}
               required
-              error={errors.accountNumber}
+              // error={errors.accountNumber}
               maxLength={accountNumberLength}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              {accountNumber.length}/{accountNumberLength} digits
-            </p>
           </div>
 
           {/* Bank Name */}
@@ -182,12 +180,12 @@ const PayoutSetup = () => {
             <button
               type="button"
               onClick={() => setShowBankModal(true)}
-              className={`w-full px-4 py-2.5 border rounded-md text-left flex justify-between items-center ${
+              className={`w-full px-4 py-2.5 bg-[#FAFAFA] rounded-md text-left flex justify-between items-center ${
                 errors.bank ? 'border-red-500' : 'border-gray-200'
               }`}
             >
               <span
-                className={!selectedBank ? 'text-gray-400' : 'text-gray-900'}
+                className={!selectedBank ? 'text-[#9D9D9D] font-medium text-[14px]' : 'text-[#3B3B3B] font-medium text-[14px]'}
               >
                 {selectedBank ? selectedBank.name : 'Select your bank'}
               </span>
@@ -274,8 +272,8 @@ const PayoutSetup = () => {
       {showBankModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] flex flex-col">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-lg font-semibold">Select your bank</h3>
+            <div className="flex justify-between items-center p-6">
+              <h3 className="text-[#0A0A0A] font-bold text-[20px] font-[lora]">Select your bank</h3>
               <button
                 onClick={() => {
                   setShowBankModal(false);
@@ -283,24 +281,12 @@ const PayoutSetup = () => {
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <IoCloseOutline size={24} className="text-[#0A0A0A]" />
               </button>
             </div>
 
-            <div className="p-4 border-b">
-              <input
+            <div className="px-4">
+              <Input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -344,7 +330,7 @@ const PayoutSetup = () => {
               </div>
 
               {filteredBanks.length === 0 && (
-                <p className="text-center text-gray-500 py-8">No banks found</p>
+                <p className="text-center text-[18px] text-[#6C6C6C] py-8 font-medium text-[14px] font-[lora]">No banks found</p>
               )}
             </div>
           </div>

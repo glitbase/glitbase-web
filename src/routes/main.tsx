@@ -23,6 +23,7 @@ import Settings from '@/pages/settings';
 import {
   PayoutDetails,
   PaymentPolicy,
+  ManageSubscriptions,
 } from '@/pages/settings/payment-billings';
 import { StoreInfo, BusinessAddress } from '@/pages/settings/business-settings';
 import {
@@ -30,14 +31,21 @@ import {
   BookingPolicies,
   GiftfinderTags,
   BusinessCategory,
+  Reviews,
 } from '@/pages/settings/operations';
+import Inbox from '@/pages/Inbox/Inbox';
+import Notifications from '@/pages/notifications/Notifications';
+import GlitfinderRoutes from './glitfinder';
 
 const Home = React.lazy(() => import('@/pages/home'));
 const SearchResults = React.lazy(() => import('@/pages/home/SearchResults'));
 const VendorRoutes = React.lazy(() => import('./vendor'));
 const StorePage = React.lazy(() => import('@/pages/vendor/store'));
 const CreateBooking = React.lazy(() => import('@/pages/booking/CreateBooking'));
-const Bookings = React.lazy(() => import('@/pages/bookings'));
+const PaymentSuccess = React.lazy(() => import('@/pages/booking/PaymentSuccess'));
+const Earnings = React.lazy(() => import('@/pages/earnings'));
+const EarningsHistory = React.lazy(() => import('@/pages/earnings/EarningsHistory'));
+const Bookings = React.lazy(() => import('@/pages/booking/Bookings'));
 
 const Dashboard = () => {
   const Comp = DashboardLayout;
@@ -129,7 +137,11 @@ const Dashboard = () => {
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/store/:storeId" element={<StorePage />} />
+        <Route path="/store/:storeId/booking/create" element={<CreateBooking />} />
         <Route path="/booking/create" element={<CreateBooking />} />
+        {/* Paystack redirect callback (configure this URL in dashboard / backend) */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/sucess" element={<PaymentSuccess />} />
 
         {/* Protected routes - authentication required */}
         <Route
@@ -169,6 +181,14 @@ const Dashboard = () => {
           element={
             <ProtectedRouteProvider>
               <PaymentPolicy />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/settings/payment-billings/manage-subscriptions"
+          element={
+            <ProtectedRouteProvider>
+              <ManageSubscriptions />
             </ProtectedRouteProvider>
           }
         />
@@ -221,6 +241,14 @@ const Dashboard = () => {
           }
         />
         <Route
+          path="/settings/operations/reviews"
+          element={
+            <ProtectedRouteProvider>
+              <Reviews />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
           path="/order-details/:orderId"
           element={
             <ProtectedRouteProvider>
@@ -228,7 +256,50 @@ const Dashboard = () => {
             </ProtectedRouteProvider>
           }
         />
+        
+        <Route
+          path="/inbox"
+          element={
+            <ProtectedRouteProvider>
+              <Inbox />
+            </ProtectedRouteProvider>
+          }
+        />
 
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRouteProvider>
+              <Notifications />
+            </ProtectedRouteProvider>
+          }
+        />
+
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRouteProvider>
+              <Bookings />
+            </ProtectedRouteProvider>
+          }
+        />
+
+        <Route
+          path="/earnings"
+          element={
+            <ProtectedRouteProvider>
+              <Earnings />
+            </ProtectedRouteProvider>
+          }
+        />
+        <Route
+          path="/earnings/history"
+          element={
+            <ProtectedRouteProvider>
+              <EarningsHistory />
+            </ProtectedRouteProvider>
+          }
+        />
         {/* Vendor routes - authentication + vendor role required */}
         <Route
           path="/vendor/*"
@@ -237,6 +308,15 @@ const Dashboard = () => {
               <VendorRouteGuard>
                 <VendorRoutes />
               </VendorRouteGuard>
+            </ProtectedRouteProvider>
+          }
+        />
+
+        <Route
+          path="/glitfinder/*"
+          element={
+            <ProtectedRouteProvider>
+              <GlitfinderRoutes />
             </ProtectedRouteProvider>
           }
         />

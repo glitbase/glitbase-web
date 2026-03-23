@@ -71,21 +71,20 @@ const BusinessSettingsTab = () => {
     <div className="w-full max-w-[600px]">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {cards.map((card) => {
-          const Icon = card.icon;
           return (
-            <button
+            <div
               key={card.id}
               onClick={() => navigate(card.path)}
-              className="p-6 bg-[#F9FAFB] rounded-lg text-left hover:bg-gray-100 transition-colors"
+              className={`relative bg-[#FAFAFA] rounded-[16px] p-4 transition-all cursor-pointer hover:border-[#3D7B22] hover:shadow-md`}
             >
-              <div className="w-12 h-12  rounded-full flex items-center justify-center mb-4">
-                {Icon}
+              <div className="mb-4 mt-2">
+                  {card.icon}
               </div>
-              <h3 className="text-[16px] font-semibold text-[#101828] mb-2">
+              <h3 className="text-[15px] font-semibold text-[#101828] mb-2">
                 {card.title}
               </h3>
-              <p className="text-[14px] text-[#667085]">{card.description}</p>
-            </button>
+              <p className="text-[13px] text-[#6C6C6C] font-medium max-w-[240px]">{card.description}</p>
+            </div>
           );
         })}
       </div>

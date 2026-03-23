@@ -31,9 +31,9 @@ export const PasswordRequirements = ({
   if (!password) return null;
 
   return (
-    <div className="mt-2 space-y-1">
+    <div className="mt-2 flex flex-wrap gap-1">
       {requirements.map((req, index) => (
-        <div key={index} className="flex items-center gap-2">
+        <div key={index} className="flex items-center gap-2m bg-[#FAFAFA] rounded-full px-2 py-1">
           {req.met ? (
             <svg
               className="w-4 h-4 text-green-500"
@@ -60,7 +60,7 @@ export const PasswordRequirements = ({
             </svg>
           )}
           <span
-            className={`text-xs ${
+            className={`text-[10px] font-medium ${
               req.met ? 'text-green-600' : 'text-gray-500'
             }`}
           >

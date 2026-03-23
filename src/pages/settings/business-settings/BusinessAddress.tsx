@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useGetMyStoreQuery, useUpdateStoreMutation } from '@/redux/vendor';
-import LocationSelector from '@/components/LocationSelector';
 import HomeLayout from '@/layout/home/HomeLayout';
+import LocationSelector from '@/components/LocationSelector';
+import { Button } from '@/components/Buttons';
+import { useGetMyStoreQuery, useUpdateStoreMutation } from '@/redux/vendor';
 
 interface Location {
   name: string;
@@ -26,16 +27,12 @@ const BusinessAddress = () => {
 
   const store = storeData?.store;
 
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
-    null
-  );
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [noFixedAddress, setNoFixedAddress] = useState(false);
 
-  // Load store location when available
   useEffect(() => {
     if (store) {
       if (store.location) {
-        // Convert from API format (geoPoint.coordinates: [lng, lat]) to our format
         setSelectedLocation({
           name: store.location.name,
           address: store.location.address,
@@ -55,15 +52,9 @@ const BusinessAddress = () => {
     }
   }, [store]);
 
-  const handleLocationSelect = (location: Location) => {
-    setSelectedLocation(location);
-  };
-
-  const handleSaveChanges = async () => {
+  const handleSave = async () => {
     if (!selectedLocation && !noFixedAddress) {
-      toast.error(
-        'Please select a location or check the no fixed address option'
-      );
+      toast.error('Please select a location or check the no fixed address option');
       return;
     }
 
@@ -93,118 +84,88 @@ const BusinessAddress = () => {
   };
 
   return (
-    <HomeLayout
-      isLoading={false}
-      showNavBar={false}
-      onSearch={() => {}}
-      onLocationChange={() => {}}
-    >
+    <HomeLayout isLoading={false} showNavBar={false}>
       <div className="min-h-screen bg-white">
-        <div className="max-w-[600px] mx-auto px-4 py-6">
+        <div className="max-w-[500px] px-6 py-8">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[14px] text-[#667085] mb-6">
+          <div className="flex items-center gap-2 text-[14px] mb-6">
             <button
               onClick={() => navigate('/settings')}
-              className="hover:text-[#101828]"
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
             >
               Settings
             </button>
-            <span>/</span>
+            <span className="text-[#6C6C6C]">/</span>
             <button
-              onClick={() =>
-                navigate('/settings', { state: { tab: 'business-settings' } })
-              }
-              className="hover:text-[#101828]"
+              onClick={() => navigate('/settings', { state: { tab: 'business-settings' } })}
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
             >
               Business settings
             </button>
-            <span>/</span>
-            <span className="text-[#101828]">Business address</span>
+            <span className="text-[#6C6C6C]">/</span>
+            <span className="text-[#101828] font-medium">Business address</span>
           </div>
 
-          {/* Header */}
-          <h1 className="text-[28px] font-semibold text-[#101828] mb-2">
+          {/* Title */}
+          <h1 className="text-[23px] font-bold text-[#0A0A0A] mb-8 tracking-tight font-[lora]">
             Store location
           </h1>
 
-          {/* Form */}
-          <div className="space-y-6 mt-6">
+          <div className="space-y-7">
             {/* Location Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-[14px] font-medium text-[#344054] mb-2">
                 Address
               </label>
-              <div
-                className={
-                  noFixedAddress ? 'opacity-50 pointer-events-none' : ''
-                }
-              >
+              <div className={noFixedAddress ? 'opacity-50 pointer-events-none' : ''}>
                 <LocationSelector
-                  onLocationSelect={handleLocationSelect}
+                  onLocationSelect={(loc: Location) => setSelectedLocation(loc)}
                   placeholder="Address"
                 />
               </div>
 
-              {/* Selected Location Display */}
+              {/* Selected location pill */}
               {selectedLocation && !noFixedAddress && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-gray-400 mt-0.5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedLocation.address}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {selectedLocation.city}, {selectedLocation.state}
-                      </p>
-                    </div>
+                <div className="mt-3 flex items-start gap-2 px-4 py-3 bg-[#FAFAFA] rounded-xl border border-[#F0F0F0]">
+                  <svg className="w-4 h-4 text-[#6C6C6C] mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-[14px] font-medium text-[#101828]">{selectedLocation.address}, {selectedLocation.name}</p>
+                    <p className="text-[13px] text-[#6C6C6C] font-medium mt-0.5">
+                      {selectedLocation.city}{selectedLocation.state ? `, ${selectedLocation.state}` : ''}
+                    </p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* No Fixed Address Checkbox */}
-            <div className="flex items-start gap-3">
+            {/* No Fixed Address */}
+            {/* <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                id="no-fixed-address"
                 checked={noFixedAddress}
                 onChange={(e) => {
                   setNoFixedAddress(e.target.checked);
-                  if (e.target.checked) {
-                    setSelectedLocation(null);
-                  }
+                  if (e.target.checked) setSelectedLocation(null);
                 }}
-                className="mt-1 h-4 w-4 rounded border-gray-300"
+                className="mt-0.5 h-4 w-4 rounded border-[#D0D5DD] accent-[#4C9A2A]"
               />
-              <label
-                htmlFor="no-fixed-address"
-                className="text-sm text-gray-700 cursor-pointer"
-              >
-                No fixed business address - online/mobile services only
-              </label>
-            </div>
+              <span className="text-[14px] font-medium text-[#344054]">
+                No fixed business address — online / mobile services only
+              </span>
+            </label> */}
 
             {/* Save Button */}
-            <div className="mt-8">
-              <button
-                onClick={handleSaveChanges}
-                disabled={(!selectedLocation && !noFixedAddress) || isLoading}
-                className="w-full px-4 py-3 text-[16px] font-medium text-white bg-[#3D7B22] rounded-full hover:bg-[#2d5c19] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Saving...' : 'Save changes'}
-              </button>
-            </div>
+            <Button
+              onClick={handleSave}
+              disabled={(!selectedLocation && !noFixedAddress) || isLoading}
+              variant="default"
+              size="full"
+              loading={isLoading}
+            >
+              Save changes
+            </Button>
           </div>
         </div>
       </div>

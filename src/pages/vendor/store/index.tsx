@@ -24,6 +24,7 @@ const StorePage = () => {
   const store = useSelector((state: RootState) => state.vendorStore.store);
   const user = useAppSelector((state) => state.auth.user);
   const { storeId } = useParams<{ storeId?: string }>();
+  const hasServicesInCart = useSelector((state: RootState) => state.cart.carts?.[store?.id || '']?.length > 0);
 
   const [activeTab, setActiveTab] = useState<TabType>('Services');
   const [isHeaderFixed, setIsHeaderFixed] = useState(false);
@@ -112,29 +113,30 @@ const StorePage = () => {
   }
 
   const tabs: TabType[] = ['Services', 'FAQs', 'About', 'Gallery', 'Reviews'];
+  const widenServicesLayout = activeTab === 'Services' && hasServicesInCart;
 
   return (
-    <HomeLayout isLoading={false} showNavBar={!isStoreOwner}>
+    <HomeLayout isLoading={false} showNavBar={false}>
       <div className="min-h-screen ">
         {/* Store Header */}
         <StoreHeader store={store} isReadOnly={!isStoreOwner} />
 
         {/* Tabs Navigation */}
         <div
-          className={`bg-white border-b sticky top-0 z-40 transition-shadow ${
-            isHeaderFixed ? 'shadow-md' : ''
+          className={`bg-white sticky top-0 z-40 transition-shadow ${
+            isHeaderFixed ? '' : ''
           }`}
         >
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex justify-center space-x-8 overflow-x-auto scrollbar-hide">
+          <div className="max-w-4xl md:max-w-7xl mx-auto px-4">
+            <div className="flex justify-center space-x-8 md:space-x-12 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-2 whitespace-nowrap font-medium transition-colors relative ${
+                  className={`py-2 whitespace-nowrap text-[14px] md:text-[15px] font-semibold transition-colors relative ${
                     activeTab === tab
-                      ? 'text-[#343226] border-b-4 border-[#4C9A2A]'
-                      : 'text-[#9D9D9D] hover:text-gray-700'
+                      ? 'text-[#343226] border-b-[3px] border-[#4C9A2A]'
+                      : 'text-[#9D9D9D]'
                   }`}
                 >
                   {tab}
@@ -144,8 +146,12 @@ const StorePage = () => {
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Tab Content — wide when Services + cart so list + booking summary can sit side-by-side on desktop */}
+        <div
+          className={`mx-auto w-full min-w-0 px-4 py-8 ${
+            widenServicesLayout ? 'max-w-7xl' : 'max-w-[640px]'
+          }`}
+        >
           {activeTab === 'Services' && (
             <Services storeId={store.id} isReadOnly={!isStoreOwner} />
           )}
@@ -158,9 +164,14 @@ const StorePage = () => {
           {activeTab === 'Gallery' && (
             <Gallery store={store} isReadOnly={!isStoreOwner} />
           )}
-          {activeTab === 'Reviews' && <Reviews storeId={store.id} />}
+          {activeTab === 'Reviews' &&           <Reviews storeId={store.id} />}
         </div>
       </div>
+
+      {/* Cart Summary - show when cart has items for this store (customer view) */}
+      {/* {!isStoreOwner && store?.id && (
+        <CartSummary storeId={store.id} />
+      )} */}
     </HomeLayout>
   );
 };

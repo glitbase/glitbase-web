@@ -13,11 +13,12 @@ import CategoryCard from '@/components/EntityCards/CategoryCard';
 import ServiceCardSkeleton from '@/components/EntityCards/ServiceCardSkeleton';
 import ProviderCardSkeleton from '@/components/EntityCards/ProviderCardSkeleton';
 import CategoryCardSkeleton from '@/components/EntityCards/CategoryCardSkeleton';
-import VendorHome from './VendorHome';
+import VendorHome from './vendorHome/VendorHome';
 import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
 import spiral2 from '@/assets/images/spiral2.svg';
 import { useModal } from '@/components/Modal/ModalProvider';
 import { ModalId } from '@/Layout';
+import { Button } from '@/components/Buttons';
 
 const Home = () => {
   const [isLoading] = useState<boolean>(false);
@@ -142,6 +143,16 @@ const Home = () => {
     refetchMarketplace();
   };
 
+  /** Same horizontal inset as section headers (parent `p-4 md:p-6`); no negative margin */
+  const carouselTrackClass =
+    'flex gap-3 sm:gap-4 overflow-x-auto overscroll-x-contain scrollbar-hide scroll-smooth snap-x snap-mandatory pb-1 touch-pan-x';
+
+  const sectionHeadingClass =
+    'text-[17px] sm:text-lg md:text-[20px] font-semibold text-[#1D2739] leading-snug';
+
+  const carouselNavBtnClass =
+    'p-1.5 sm:p-2 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 touch-manipulation';
+
   // NOTE: Vendor onboarding redirects are now handled by VendorOnboardingGuard
   // on the /vendor/* routes. Homepage is accessible to all users.
 
@@ -155,125 +166,85 @@ const Home = () => {
       {user?.activeRole === 'vendor' ? (
         <VendorHome />
       ) : (
-        <div className="px-12 py-6  min-h-screen">
+        <div className="min-h-screen p-4 md:p-6 py-6">
           {/* Greeting Section */}
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-[40px] font-normal text-[#1D2739] font-[lora]">
+          <div className="flex items-center justify-between mb-4 md:mb-8">
+            <h1 className="text-[20px] md:text-[26px] font-semibold text-primary-text font-[lora] tracking-tight">
               Hello{user?.firstName ? `, ${user.firstName}` : ''} 👋
             </h1>
-            <button className="flex items-center gap-2 px-6 py-3  rounded-lg hover:bg-gray-50 transition-colors bg-[#FAFAFA]">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M2 4.66675L4 4.66675"
-                  stroke="#3B3B3B"
-                  stroke-width="1.2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M2 11.3333L6 11.3333"
-                  stroke="#3B3B3B"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M12 11.3333H14"
-                  stroke="#3B3B3B"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M10 4.66675L14 4.66675"
-                  stroke="#3B3B3B"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M4 4.66675C4 4.04549 4 3.73487 4.10149 3.48983C4.23682 3.16313 4.49639 2.90357 4.82309 2.76824C5.06812 2.66675 5.37875 2.66675 6 2.66675C6.62125 2.66675 6.93187 2.66675 7.17693 2.76824C7.5036 2.90357 7.7632 3.16313 7.89853 3.48983C8 3.73487 8 4.04549 8 4.66675C8 5.288 8 5.59863 7.89853 5.84366C7.7632 6.17036 7.5036 6.42993 7.17693 6.56525C6.93187 6.66675 6.62125 6.66675 6 6.66675C5.37875 6.66675 5.06812 6.66675 4.82309 6.56525C4.49639 6.42993 4.23682 6.17036 4.10149 5.84366C4 5.59863 4 5.288 4 4.66675Z"
-                  stroke="#3B3B3B"
-                  stroke-width="1.5"
-                />
-                <path
-                  d="M8 11.3333C8 10.712 8 10.4014 8.10147 10.1563C8.2368 9.82965 8.4964 9.57005 8.82307 9.43472C9.06813 9.33325 9.37873 9.33325 10 9.33325C10.6213 9.33325 10.9319 9.33325 11.1769 9.43472C11.5036 9.57005 11.7632 9.82965 11.8985 10.1563C12 10.4014 12 10.712 12 11.3333C12 11.9545 12 12.2651 11.8985 12.5102C11.7632 12.8369 11.5036 13.0965 11.1769 13.2318C10.9319 13.3333 10.6213 13.3333 10 13.3333C9.37873 13.3333 9.06813 13.3333 8.82307 13.2318C8.4964 13.0965 8.2368 12.8369 8.10147 12.5102C8 12.2651 8 11.9545 8 11.3333Z"
-                  stroke="#3B3B3B"
-                  stroke-width="1.5"
-                />
-              </svg>
-
-              <span className="text-[14px] font-medium text-[#1D2739]">
+            {/* <button className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-100 transition-colors bg-[#FAFAFA]">
+              <Settings2 size={18} color='#3B3B3B' />
+              <span className="text-[12px] font-semibold text-[#3B3B3B]">
                 Filters
               </span>
-            </button>
+            </button> */}
           </div>
 
           {/* Banner Section */}
-          <div className="mb-12 relative overflow-hidden rounded-2xl bg-[#F2FFEC] p-8 h-[250px] flex items-center justify-between">
-            <div className="flex flex-col justify-between h-full">
-              <div className="upper mb-4">
-                {' '}
-                <h2 className="text-[24px] font-semibold text-[#0A0A0A] mb-3 max-w-[375px]">
+          <div className="mb-6 md:mb-8 relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#F2FFEC] p-4 sm:p-6 md:p-8 flex flex-col md:flex-row md:items-stretch gap-4 md:gap-6 md:min-h-[200px] lg:h-[230px] lg:min-h-0">
+            <div className="relative z-10 flex flex-col justify-between gap-4 md:gap-5 flex-1 min-w-0 md:max-w-[min(100%,400px)] lg:max-w-[420px]">
+              <div>
+                <h2 className="text-[15px] sm:text-lg md:text-[20px] font-semibold text-[#0A0A0A] mb-1 leading-snug">
                   Your favorite pro not here yet?
                 </h2>
-                <p className="text-[18px] text-[#6C6C6C] mb-4 max-w-[375px]">
+                <p className="text-[#6C6C6C] text-[13px] sm:text-[15px] md:text-base font-medium leading-snug">
                   Share their details with us and we'll invite them to join
                 </p>
               </div>
-
-              <button
+              <Button
                 onClick={() => showModal(ModalId.RECOMMEND_PRO_MODAL)}
-                className="bg-[#4C9A2A] text-white max-w-[225px] px-12 py-4 rounded-full font-semibold text-[14px] hover:bg-[#3d7b22] transition-colors"
+                className="w-fit !px-5 sm:!px-6 md:!py-2.5 !py-2 !text-[12px] md:text-[15px] justify-center"
               >
                 Submit their info
-              </button>
+              </Button>
             </div>
-            <div className="absolute right-0 top-0 h-full">
+            {/* In-flow on small screens; decorative strip on md+ */}
+            <div
+              className="hidden md:block relative md:absolute md:right-0 md:top-0 md:h-full flex justify-end md:justify-end md:w-[48%] lg:w-[42%] max-w-[280px] sm:max-w-[320px] md:max-w-none mx-auto md:mx-0 pointer-events-none shrink-0 h-28 sm:h-32 md:h-full"
+              aria-hidden
+            >
               <img
                 src={spiral2}
-                alt="banner"
-                className="w-full h-full object-cover"
+                alt=""
+                className="h-full w-auto max-h-full object-contain object-right opacity-95 md:opacity-100 md:w-full md:object-cover"
               />
             </div>
           </div>
 
           {/* Services you may love */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[24px] font-semibold text-[#1D2739]">
+          <div className="mb-6 md:mb-8">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-3 mb-4 md:mb-6">
+              <h2
+                className={`${sectionHeadingClass} min-w-0 flex-1 pr-2 sm:pr-3`}
+              >
                 Services you may love
               </h2>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2 shrink-0">
                 <button
+                  type="button"
                   onClick={() =>
                     scroll(servicesScrollRef, 'left', setServicesScrollState)
                   }
                   disabled={servicesScrollState.isAtStart}
-                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`${carouselNavBtnClass} bg-[#F0F0F0] hover:bg-gray-50`}
                 >
-                  <IoChevronBack size={20} className="text-[#1D2739]" />
+                  <IoChevronBack size={18} className="text-[#0A0A0A] sm:w-5 sm:h-5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() =>
                     scroll(servicesScrollRef, 'right', setServicesScrollState)
                   }
                   disabled={servicesScrollState.isAtEnd}
-                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`${carouselNavBtnClass} bg-[#F0F0F0] hover:bg-gray-50`}
                 >
-                  <IoChevronForward size={20} className="text-[#1D2739]" />
+                  <IoChevronForward size={18} className="text-[#1D2739] sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
             <div
               ref={servicesScrollRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+              className={carouselTrackClass}
             >
               {isMarketplaceLoading
                 ? Array.from({ length: 8 }).map((_, index) => (
@@ -288,35 +259,39 @@ const Home = () => {
           </div>
 
           {/* Providers near you */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[24px] font-semibold text-[#1D2739]">
+          <div className="mb-6 md:mb-8">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-3 mb-4 md:mb-6">
+              <h2
+                className={`${sectionHeadingClass} min-w-0 flex-1 pr-2 sm:pr-3`}
+              >
                 Providers near you
               </h2>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2 shrink-0">
                 <button
+                  type="button"
                   onClick={() =>
                     scroll(providersScrollRef, 'left', setProvidersScrollState)
                   }
                   disabled={providersScrollState.isAtStart}
-                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`${carouselNavBtnClass} bg-[#F0F0F0] hover:bg-gray-50`}
                 >
-                  <IoChevronBack size={20} className="text-[#1D2739]" />
+                  <IoChevronBack size={18} className="text-[#1D2739] sm:w-5 sm:h-5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() =>
                     scroll(providersScrollRef, 'right', setProvidersScrollState)
                   }
                   disabled={providersScrollState.isAtEnd}
-                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`${carouselNavBtnClass} bg-[#F0F0F0] hover:bg-gray-50`}
                 >
-                  <IoChevronForward size={20} className="text-[#1D2739]" />
+                  <IoChevronForward size={18} className="text-[#1D2739] sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
             <div
               ref={providersScrollRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+              className={carouselTrackClass}
             >
               {isMarketplaceLoading
                 ? Array.from({ length: 8 }).map((_, index) => (
@@ -329,11 +304,13 @@ const Home = () => {
           </div>
 
           {/* Categories */}
-          <div className="mb-12">
-            <h2 className="text-[24px] font-semibold text-[#1D2739] mb-6">
+          <div className="mb-6 md:mb-8">
+            <h2
+              className={`${sectionHeadingClass} mb-4 md:mb-6`}
+            >
               Categories
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {isCategoriesLoading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <CategoryCardSkeleton key={`category-skeleton-${index}`} />
@@ -351,55 +328,63 @@ const Home = () => {
           </div>
 
           {/* New to glitbase */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[24px] font-semibold text-[#1D2739]">
-                New to glitbase
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() =>
-                    scroll(
-                      newProvidersScrollRef,
-                      'left',
-                      setNewProvidersScrollState
-                    )
-                  }
-                  disabled={newProvidersScrollState.isAtStart}
-                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+          {marketplaceData?.newToGlitbase?.data?.stores?.length > 0 && (
+            <div className="mb-8 md:mb-12">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-3 mb-4 md:mb-6">
+                <h2
+                  className={`${sectionHeadingClass} min-w-0 flex-1 pr-2 sm:pr-3`}
                 >
-                  <IoChevronBack size={20} className="text-[#1D2739]" />
-                </button>
-                <button
-                  onClick={() =>
-                    scroll(
-                      newProvidersScrollRef,
-                      'right',
-                      setNewProvidersScrollState
-                    )
-                  }
-                  disabled={newProvidersScrollState.isAtEnd}
-                  className="p-2 rounded-full border border-[#E4E7EC] hover:bg-gray-50 transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <IoChevronForward size={20} className="text-[#1D2739]" />
-                </button>
+                  New to glitbase
+                </h2>
+                <div className="flex gap-1.5 sm:gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      scroll(
+                        newProvidersScrollRef,
+                        'left',
+                        setNewProvidersScrollState
+                      )
+                    }
+                    disabled={newProvidersScrollState.isAtStart}
+                    className={`${carouselNavBtnClass} border border-[#E4E7EC] bg-white hover:bg-gray-50`}
+                  >
+                    <IoChevronBack size={18} className="text-[#1D2739] sm:w-5 sm:h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      scroll(
+                        newProvidersScrollRef,
+                        'right',
+                        setNewProvidersScrollState
+                      )
+                    }
+                    disabled={newProvidersScrollState.isAtEnd}
+                    className={`${carouselNavBtnClass} border border-[#E4E7EC] bg-white hover:bg-gray-50`}
+                  >
+                    <IoChevronForward size={18} className="text-[#1D2739] sm:w-5 sm:h-5" />
+                  </button>
+                </div>
+              </div>
+              <div
+                ref={newProvidersScrollRef}
+                className={carouselTrackClass}
+              >
+                {isMarketplaceLoading
+                  ? Array.from({ length: 8 }).map((_, index) => (
+                      <ProviderCardSkeleton
+                        key={`new-provider-skeleton-${index}`}
+                      />
+                    ))
+                  : marketplaceData?.newToGlitbase?.data?.stores?.map(
+                      (store: any) => (
+                        <ProviderCard key={store.id} item={store} />
+                      )
+                    )}
               </div>
             </div>
-            <div
-              ref={newProvidersScrollRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
-            >
-              {isMarketplaceLoading
-                ? Array.from({ length: 8 }).map((_, index) => (
-                    <ProviderCardSkeleton
-                      key={`new-provider-skeleton-${index}`}
-                    />
-                  ))
-                : marketplaceData?.newToGlitbase?.data?.stores?.map(
-                    (store: any) => <ProviderCard key={store.id} item={store} />
-                  )}
-            </div>
-          </div>
+          )}
         </div>
       )}
     </HomeLayout>

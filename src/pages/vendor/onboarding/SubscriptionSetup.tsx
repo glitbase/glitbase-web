@@ -216,14 +216,14 @@ const SubscriptionSetup = () => {
             <>
               {/* Commission Details Box */}
               <div className="mb-6 p-4 bg-[#F9FAFB] rounded-lg border border-gray-200">
-                <h3 className="font-semibold text-gray-900 mb-2">
+                <h3 className="font-semibold text-[#0A0A0A] text-[18px] font-[lora] mb-2">
                   Commission details
                 </h3>
-                <p className="text-sm text-gray-600 mb-1">
+                <p className="text-[14px] text-[#6C6C6C] font-medium mb-1">
                   After your trial ends, a small commission of 5%-12% per
                   transaction based on your category is applied
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-[14px] text-[#6C6C6C] font-medium mt-3">
                   Billed after every earning
                 </p>
               </div>
@@ -231,7 +231,7 @@ const SubscriptionSetup = () => {
               <div className="space-y-2 flex flex-col items-center text-center mb-8">
                 <Typography
                   variant="heading"
-                  className="!text-[2rem] font-medium font-[lora]"
+                  className="!text-[2rem] font-medium font-[lora] tracking-tight"
                 >
                   No monthly fees. Only pay when you earn.
                 </Typography>
@@ -394,7 +394,7 @@ const SubscriptionSetup = () => {
                 : 'Start a 7-day free trial'}
             </Button>
             {isNigeria && (
-              <p className="text-center text-sm text-gray-600 mt-3">
+              <p className="text-center text-sm text-gray-600 mt-3 font-medium">
                 Pay only when you earn.
               </p>
             )}
@@ -405,25 +405,6 @@ const SubscriptionSetup = () => {
           {showSuccessModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg max-w-md w-full p-8 relative">
-                <button
-                  onClick={handleGoToDashboard}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-
                 <div className="flex flex-col items-center text-center">
                   {/* Success Icon */}
                   <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6">
@@ -433,7 +414,7 @@ const SubscriptionSetup = () => {
                   <h2 className="text-2xl font-semibold font-[lora] mb-2">
                     Your store is now live on Glitbase
                   </h2>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-[14px] text-[#6C6C6C] font-medium mb-6">
                     {isNigeria
                       ? 'Enjoy 0% commission for 30 days!'
                       : 'Your 7-day free trial has started!'}

@@ -8,7 +8,7 @@ import {
   useUserProfileQuery,
 } from '@/redux/auth';
 import { useAppSelector } from '@/hooks/redux-hooks';
-import { Input } from '@/components/Inputs/TextInput';
+import LocationIcon from '@/assets/icons/location.png';
 
 const googleCloudApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const SELECTED_LOCATION_KEY = 'selected_location';
@@ -53,6 +53,13 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
   const autocompleteService =
     useRef<google.maps.places.AutocompleteService | null>(null);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
+
+  // Open the location modal only once user has loaded and has no preferred location set
+  useEffect(() => {
+    if (user === undefined || user === null) return;
+    const needsLocation = user.activeRole === 'customer' && !user.preferredLocation;
+    if (needsLocation) setModalVisible(true);
+  }, [user]);
 
   useEffect(() => {
     loadRecentSearches();
@@ -384,7 +391,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
           address: addressParts[0] || place.description,
           city: addressParts[1] || '',
           state: addressParts[2] || '',
-          zipcode: '',
+          zipcode: addressParts[3] || '111111',
           coordinates,
         };
       } else {
@@ -483,7 +490,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
           onClick={() => setModalVisible(true)}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <FaLocationDot size={14} className="text-[#12B76A]" />
+          <img src={LocationIcon} alt="Location" className="w-4 shrink-0" />
           <span className="text-[#1D2739] font-medium text-[14px] max-w-[150px] truncate">
             {selectedLocation}
           </span>
@@ -494,7 +501,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
           onClick={() => setModalVisible(true)}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <FaLocationDot size={20} className="text-[#12B76A]" />
+          <img src={LocationIcon} alt="Location" className="w-6 shrink-0" />
           <span className="text-[#1D2739] font-medium text-[16px]">
             Select Location
           </span>
@@ -511,9 +518,9 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
         <div className="fixed inset-0 bg-black/30" />
         <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
-            <DialogPanel className="w-full max-w-md rounded-xl bg-white p-6 backdrop-blur-2xl">
+            <DialogPanel className="w-full max-w-xl rounded-xl bg-white p-4 md:p-6 backdrop-blur-2xl">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-[lora] text-[22px] text-[#1D2739] tracking-tight">
+                <h2 className="font-[lora] text-[18px] md:text-[22px] text-[#1D2739] font-semibold tracking-tight">
                   Select location
                 </h2>
                 <button
@@ -537,7 +544,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                     setSearchText(e.target.value);
                     debouncedSearch(e.target.value);
                   }}
-                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAFA] border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4C9A2A]/20 text-[#1D2739] placeholder:text-[#98A2B3]"
+                  className="w-full pl-10 text-[14px] md:text-[16px] font-medium pr-10 py-3 bg-[#FAFAFA] border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4C9A2A]/20 text-[#1D2739] placeholder:text-[#98A2B3]"
                 />
                 {searchText && (
                   <button
@@ -555,7 +562,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
               <button
                 onClick={getCurrentLocation}
                 disabled={isGettingLocation}
-                className="flex items-center gap-3 py-3 px-2 mb-4 hover:bg-[#F9FAFB] rounded-lg transition-colors w-full disabled:opacity-70"
+                className="flex items-center gap-3 py-2 md:py-3 px-2 mb-4 hover:bg-[#F9FAFB] rounded-lg transition-colors w-full disabled:opacity-70"
               >
                 {isGettingLocation ? (
                   <div className="w-8 h-8 border-2 border-[#4C9A2A] border-t-transparent rounded-full animate-spin" />
@@ -580,7 +587,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                     />
                   </svg>
                 )}
-                <span className="font-semibold text-[#4C9A2A] text-[16px]">
+                <span className="font-semibold text-[#4C9A2A] text-[14px] md:text-[16px]">
                   {isGettingLocation
                     ? 'Getting location...'
                     : 'Use current location'}
@@ -625,12 +632,12 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[#0A0A0A] text-[16px] truncate">
+                            <p className="font-semibold text-[#0A0A0A] text-[14px] md:text-[16px] truncate">
                               {item.description ||
                                 item.structured_formatting?.main_text}
                             </p>
                             {item.structured_formatting?.secondary_text && (
-                              <p className="text-[14px] text-[#6C6C6C] mt-0.5 truncate">
+                              <p className="text-[13px] md:text-[14px] text-[#6C6C6C] mt-0.5 truncate font-medium">
                                 {item.structured_formatting.secondary_text}
                               </p>
                             )}
@@ -650,7 +657,7 @@ const LocationSelector = ({ onLocationChange }: LocationSelectorProps) => {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-center text-[#6C6C6C] py-8 text-[14px]">
+                  <p className="text-center font-medium text-[#6C6C6C] py-8 text-[14px]">
                     No recent searches
                   </p>
                 )}

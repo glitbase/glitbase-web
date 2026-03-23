@@ -81,3 +81,24 @@ export const resolveCurrency = (currency: string) => {
   };
   return currencyMap[currency] || currency;
 }
+
+/**
+ * First visit tracking utilities
+ */
+const FIRST_VISIT_KEY = 'glitbase_first_visit_completed';
+
+/**
+ * Check if this is the user's first visit
+ * @returns true if it's the first visit, false otherwise
+ */
+export const isFirstVisit = (): boolean => {
+  const hasVisited = localStorage.getItem(FIRST_VISIT_KEY);
+  return hasVisited !== 'true';
+};
+
+/**
+ * Mark that the user has completed their first visit
+ */
+export const markFirstVisitCompleted = (): void => {
+  localStorage.setItem(FIRST_VISIT_KEY, 'true');
+};

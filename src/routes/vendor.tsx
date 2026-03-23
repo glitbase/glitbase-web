@@ -12,6 +12,7 @@ import {
 import StorePage from '@/pages/vendor/store';
 import EditStoreProfile from '@/pages/vendor/store/EditStoreProfile';
 import AddService from '@/pages/vendor/store/AddService';
+import Services from '@/pages/vendor/services';
 import EditLocation from '@/pages/vendor/store/EditLocation';
 import EditOpeningHours from '@/pages/vendor/store/EditOpeningHours';
 import VendorOnboardingGuard from './VendorOnboardingGuard';
@@ -46,6 +47,14 @@ const VendorRoutes = () => {
       <Route path="bookings" element={<Navigate to="/vendor/store" replace />} />
 
       {/* Dashboard routes - require completed onboarding */}
+      <Route
+        path="services"
+        element={
+          <VendorOnboardingGuard>
+            <Services />
+          </VendorOnboardingGuard>
+        }
+      />
       <Route
         path="store"
         element={

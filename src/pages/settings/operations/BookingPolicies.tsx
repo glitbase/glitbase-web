@@ -2,8 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useGetMyStoreQuery, useUpdateStoreMutation } from '@/redux/vendor';
 import HomeLayout from '@/layout/home/HomeLayout';
+import { Textarea } from '@/components/Inputs/TextAreaInput';
+import { Button } from '@/components/Buttons';
+import { useGetMyStoreQuery, useUpdateStoreMutation } from '@/redux/vendor';
 
 const BookingPolicies = () => {
   const navigate = useNavigate();
@@ -16,20 +18,16 @@ const BookingPolicies = () => {
   const [rescheduling, setRescheduling] = useState('');
   const [depositRequired, setDepositRequired] = useState('');
 
-  // Load existing policies
   useEffect(() => {
     if (store?.policies?.booking) {
       setCancellation(store.policies.booking.cancellation || '');
       setRescheduling(store.policies.booking.rescheduling || '');
 
-      // Handle deposit from payment policy
       if (store.policies.payment) {
         const { depositType, amount } = store.policies.payment;
         if (depositType && amount) {
           setDepositRequired(
-            `${amount}${
-              depositType === 'percentage' ? '%' : ''
-            } deposit required at booking, remaining balance due at appointment`
+            `${amount}${depositType === 'percentage' ? '%' : ''} deposit required at booking, remaining balance due at appointment`
           );
         }
       }
@@ -37,26 +35,12 @@ const BookingPolicies = () => {
   }, [store]);
 
   const handleSave = async () => {
-    if (!cancellation.trim()) {
-      toast.error('Please enter cancellation policy');
-      return;
-    }
-
-    if (!rescheduling.trim()) {
-      toast.error('Please enter rescheduling policy');
-      return;
-    }
+    if (!cancellation.trim()) { toast.error('Please enter cancellation policy'); return; }
+    if (!rescheduling.trim()) { toast.error('Please enter rescheduling policy'); return; }
 
     try {
-      // Clean policies object to remove _id fields
       const cleanPolicies = store.policies ? { ...store.policies } : {};
-
-      // Remove _id from root level
-      if ('_id' in cleanPolicies) {
-        delete cleanPolicies._id;
-      }
-
-      // Remove _id from nested objects if they exist
+      if ('_id' in cleanPolicies) delete cleanPolicies._id;
       if (cleanPolicies.booking && '_id' in cleanPolicies.booking) {
         cleanPolicies.booking = { ...cleanPolicies.booking };
         delete cleanPolicies.booking._id;
@@ -85,107 +69,84 @@ const BookingPolicies = () => {
   };
 
   return (
-    <HomeLayout
-      isLoading={false}
-      showNavBar={false}
-      onSearch={() => {}}
-      onLocationChange={() => {}}
-    >
+    <HomeLayout isLoading={false} showNavBar={false}>
       <div className="min-h-screen bg-white">
-        <div className="max-w-[600px] mx-auto px-4 py-6">
+        <div className="max-w-[500px] px-6 py-8">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[14px] text-[#667085] mb-6">
+          <div className="flex items-center gap-2 text-[14px] mb-6">
             <button
               onClick={() => navigate('/settings')}
-              className="hover:text-[#101828]"
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
             >
               Settings
             </button>
-            <span>/</span>
+            <span className="text-[#6C6C6C]">/</span>
             <button
-              onClick={() =>
-                navigate('/settings', { state: { tab: 'operations' } })
-              }
-              className="hover:text-[#101828]"
+              onClick={() => navigate('/settings', { state: { tab: 'operations' } })}
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
             >
               Operations
             </button>
-            <span>/</span>
-            <span className="text-[#101828]">Booking policies</span>
+            <span className="text-[#6C6C6C]">/</span>
+            <span className="text-[#101828] font-medium">Booking policies</span>
           </div>
 
-          {/* Header */}
-          <h1 className="text-[28px] font-semibold text-[#101828] mb-8">
+          {/* Title */}
+          <h1 className="text-[23px] font-bold text-[#0A0A0A] mb-8 tracking-tight font-[lora]">
             Booking policies
           </h1>
 
-          {/* Form */}
-          <div className="space-y-6">
-            {/* Cancellation Window */}
-            <div>
-              <label className="block text-[14px] font-medium text-[#344054] mb-2">
-                Cancellation window
-              </label>
-              <textarea
-                value={cancellation}
-                onChange={(e) => setCancellation(e.target.value)}
-                placeholder="Cancellations must be made at least 24 hours in advance to avoid fees"
-                rows={4}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg resize-none text-[14px]"
-              />
-            </div>
+          <div className="space-y-7">
+            {/* Cancellation */}
+            <Textarea
+              label="Cancellation window"
+              value={cancellation}
+              onChange={(e) => setCancellation(e.target.value)}
+              placeholder="Cancellations must be made at least 24 hours in advance to avoid fees"
+              rows={4}
+            />
 
-            {/* Rescheduling Rules */}
-            <div>
-              <label className="block text-[14px] font-medium text-[#344054] mb-2">
-                Rescheduling rules
-              </label>
-              <textarea
-                value={rescheduling}
-                onChange={(e) => setRescheduling(e.target.value)}
-                placeholder="Clients can reschedule up to 2 times without penalty with 12 hours notice"
-                rows={4}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg resize-none text-[14px]"
-              />
-            </div>
+            {/* Rescheduling */}
+            <Textarea
+              label="Rescheduling rules"
+              value={rescheduling}
+              onChange={(e) => setRescheduling(e.target.value)}
+              placeholder="Clients can reschedule up to 2 times without penalty with 12 hours notice"
+              rows={4}
+            />
 
-            {/* Deposit Required (Read-only) */}
+            {/* Deposit (read-only) */}
             <div>
-              <label className="block text-[14px] font-medium text-[#344054] mb-2">
-                Deposit required
-              </label>
-              <textarea
+              <Textarea
+                label="Deposit required"
                 value={depositRequired}
                 readOnly
-                placeholder="No deposit policy set. Configure in Payment & Billings > Payment Policy"
+                placeholder="No deposit policy set. Configure in Payment & Billings → Payment Policy"
                 rows={4}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg resize-none text-[14px] bg-gray-50 cursor-not-allowed"
+                className="cursor-not-allowed opacity-60"
               />
-              <p className="mt-2 text-[12px] text-[#667085]">
+              <p className="mt-2 text-[13px] text-[#6C6C6C] font-medium">
                 Deposit settings are managed in{' '}
                 <button
-                  onClick={() =>
-                    navigate('/settings/payment-billings/payment-policy')
-                  }
-                  className="text-[#3D7B22] hover:underline"
+                  type="button"
+                  onClick={() => navigate('/settings/payment-billings/payment-policy')}
+                  className="text-[#4C9A2A] hover:underline"
                 >
                   Payment & Billings → Payment Policy
                 </button>
               </p>
             </div>
 
-            {/* Save Button */}
-            <div className="mt-8">
-              <button
-                onClick={handleSave}
-                disabled={
-                  isLoading || !cancellation.trim() || !rescheduling.trim()
-                }
-                className="w-full px-4 py-3 text-[16px] font-medium text-white bg-[#3D7B22] rounded-full hover:bg-[#2d5c19] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Saving...' : 'Save changes'}
-              </button>
-            </div>
+            {/* Save */}
+            <Button
+              onClick={handleSave}
+              disabled={isLoading || !cancellation.trim() || !rescheduling.trim()}
+              variant="default"
+              size="full"
+              loading={isLoading}
+            >
+              Save changes
+            </Button>
           </div>
         </div>
       </div>

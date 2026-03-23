@@ -100,7 +100,18 @@ export const vendorApi = createApi({
 
     // Services Management
     getServices: builder.query({
-      query: ({ storeId, page = 1, limit = 10, category, status, search }) => {
+      query: ({
+        storeId,
+        page = 1,
+        limit = 10,
+        category,
+        status,
+        search,
+        searchTerm,
+        durationInMinutes,
+        maxPrice,
+        isSuspended,
+      }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -108,6 +119,12 @@ export const vendorApi = createApi({
         if (category) params.append('category', category);
         if (status) params.append('status', status);
         if (search) params.append('search', search);
+        if (searchTerm) params.append('searchTerm', searchTerm);
+        if (durationInMinutes !== undefined)
+          params.append('durationInMinutes', durationInMinutes.toString());
+        if (maxPrice !== undefined) params.append('maxPrice', maxPrice.toString());
+        if (isSuspended !== undefined)
+          params.append('isSuspended', isSuspended ? 'true' : 'false');
 
         return {
           url: `/api/v1/services/store/${storeId}?${params.toString()}`,
@@ -150,6 +167,42 @@ export const vendorApi = createApi({
       transformResponse: (response: any) => {
         return response.data;
       },
+    }),
+    toggleServiceSuspension: builder.mutation({
+      query: (serviceId) => ({
+        url: `/api/v1/services/${serviceId}/toggle-suspension`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Services'],
+      transformResponse: (response: any) => {
+        return response.data;
+      },
+    }),
+    createAddOn: builder.mutation({
+      query: ({ serviceId, data }: { serviceId: string; data: any }) => ({
+        url: `/api/v1/services/${serviceId}/add-ons`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Services'],
+      transformResponse: (response: any) => response.data,
+    }),
+    updateAddOn: builder.mutation({
+      query: ({ serviceId, addOnId, data }: { serviceId: string; addOnId: string; data: any }) => ({
+        url: `/api/v1/services/${serviceId}/add-ons/${addOnId}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: ['Services'],
+      transformResponse: (response: any) => response.data,
+    }),
+    deleteAddOn: builder.mutation({
+      query: ({ serviceId, addOnId }: { serviceId: string; addOnId: string }) => ({
+        url: `/api/v1/services/${serviceId}/add-ons/${addOnId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Services'],
+      transformResponse: (response: any) => response.data,
     }),
 
     // Reviews Management
@@ -306,6 +359,10 @@ export const {
   useCreateServiceMutation,
   useUpdateServiceMutation,
   useDeleteServiceMutation,
+  useToggleServiceSuspensionMutation,
+  useCreateAddOnMutation,
+  useUpdateAddOnMutation,
+  useDeleteAddOnMutation,
   useGetStoreReviewsQuery,
   useLazyGetStoreReviewsQuery,
   useGetStoreReviewMetricsQuery,

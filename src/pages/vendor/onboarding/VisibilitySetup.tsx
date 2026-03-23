@@ -7,14 +7,15 @@ import VendorOnboardingLayout from './VendorOnboardingLayout';
 import { toast } from 'react-toastify';
 import AuthLayout from '@/layout/auth';
 import { Input } from '@/components/Inputs/TextInput';
+import { GoBack } from '@/components/GoBack';
 
 const VisibilitySetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get data passed from previous step via navigation state
   const storeData = location.state?.storeData || {};
-  
+
   const [tags, setTags] = useState<string[]>(storeData.tags || []);
   const [inputValue, setInputValue] = useState('');
 
@@ -72,51 +73,26 @@ const VisibilitySetup = () => {
   return (
     <AuthLayout isLoading={false}>
       <VendorOnboardingLayout progress={83} currentStep={5}>
-        <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
+        <div className="mx-auto pb-8 max-w-[600px] flex flex-col items-center mt-12">
           <div className="w-full mb-6">
-            <button
-              onClick={() => navigate('/vendor/onboarding/categories', {
-                state: { storeData }
-              })}
-              className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 12H5M12 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-
+            <GoBack className='text-[1.3rem] mb-5' />
             <Typography
               variant="heading"
-              className="text-start !text-[2rem] font-semibold font-[lora]"
+              className="text-left !text-[1.7rem] font-bold font-[lora] text-[#0A0A0A]"
             >
               Boost your visibility
             </Typography>
-            <p className="text-start font-normal text-[1rem] text-[#667185] !mt-3 max-w-[440px]">
-              Add up to {MAX_TAGS} keywords for Glitfinder and Glitmatch tags so
-              customers can discover your business easily
+            <p className="text-left font-medium text-[1rem] text-[#6C6C6C] !mt-2">
+              Add up to 5 keywords for Glitfinder and Glitmatch tags so customers can discover your business easily
             </p>
           </div>
 
           <form
-            className="w-full py-6 space-y-6"
+            className="w-full py-4"
             onSubmit={(e) => e.preventDefault()}
           >
             {/* Tag Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Glit tags
-              </label>
               <div className="flex gap-2 w-full ">
                 <div className="w-full">
                   <Input
@@ -128,6 +104,7 @@ const VisibilitySetup = () => {
                     maxLength={50}
                     disabled={tags.length >= MAX_TAGS}
                     variant="default"
+                    label="Glit tags"
                     className="w-full"
                   />
                 </div>
@@ -139,13 +116,13 @@ const VisibilitySetup = () => {
               {tags.map((tag) => (
                 <div
                   key={tag}
-                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-full text-sm"
+                  className="inline-flex items-center gap-3 px-4 py-2 bg-[#FAFAFA] text-[#0A0A0A] text-sm font-medium rounded-full text-sm"
                 >
-                  <span>{tag}</span>
+                  <p className='capitalize'>{tag}</p>
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="text-gray-500"
+                    className="text-[#3B3B3B] hover:text-gray-700 text-lg leading-none"
                   >
                     ×
                   </button>

@@ -12,7 +12,7 @@ const CategoryCard = ({ item, onClick }: CategoryCardProp) => {
   return (
     <div
       onClick={onClick}
-      className="relative overflow-hidden rounded-2xl h-[172px] cursor-pointer hover:opacity-90 transition-opacity"
+      className="relative overflow-hidden rounded-xl sm:rounded-2xl h-[136px] sm:h-[152px] md:h-[172px] cursor-pointer hover:opacity-90 transition-opacity"
     >
       <img
         src={
@@ -23,8 +23,10 @@ const CategoryCard = ({ item, onClick }: CategoryCardProp) => {
         className="w-full h-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h3 className="text-[18px] text-white font-semibold">{item?.name}</h3>
+      <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+        <h3 className="text-[14px] sm:text-[16px] md:text-[18px] text-white font-semibold leading-tight line-clamp-2">
+          {item?.name}
+        </h3>
       </div>
     </div>
   );

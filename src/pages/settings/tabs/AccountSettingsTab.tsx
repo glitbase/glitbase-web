@@ -9,6 +9,8 @@ import ChangePasswordModal from '@/components/Modal/ChangePasswordModal';
 import LogoutConfirmModal from '@/components/Modal/LogoutConfirmModal';
 import { useAppDispatch } from '@/hooks/redux-hooks';
 import { setUnauthenticated } from '@/redux/auth/authSlice';
+import { Button } from '@/components/Buttons';
+import { SquarePen } from 'lucide-react';
 
 const AccountSettingsTab = () => {
   const navigate = useNavigate();
@@ -66,16 +68,16 @@ const AccountSettingsTab = () => {
       <div className="mb-6 pb-6 border-b border-gray-200">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <h3 className="text-[16px] font-semibold text-[#101828] mb-1">
+            <h3 className="text-[14px] md:text-[16px] font-semibold text-[#101828] mb-1">
               Change password
             </h3>
-            <p className="text-[14px] text-[#6C6C6C]">************</p>
+            <p className="text-[12px] md:text-[14px] text-[#6C6C6C] font-medium">************</p>
           </div>
           <button
             onClick={() => setShowChangePasswordModal(true)}
             className="text-gray-400 hover:text-gray-600"
           >
-            <FiEdit2 size={18} />
+            <SquarePen className='mt-3' size={18} color='#6C6C6C' />
           </button>
         </div>
       </div>
@@ -84,32 +86,27 @@ const AccountSettingsTab = () => {
       <div className="mb-6 pb-6 border-b border-gray-200">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <h3 className="text-[16px] font-semibold text-[#101828] mb-1">
+            <h3 className="text-[14px] md:text-[16px] font-semibold text-[#101828] mb-1">
               Language
             </h3>
-            <p className="text-[14px] text-[#6C6C6C]">English (UK)</p>
+            <p className="text-[12px] md:text-[14px] text-[#6C6C6C] font-medium">English (UK)</p>
           </div>
           <button disabled className="text-gray-300 cursor-not-allowed">
-            <FiEdit2 size={18} />
+            <SquarePen className='mt-3 opacity-50' size={18} color='#6C6C6C' />
           </button>
         </div>
       </div>
 
       {/* Log Out */}
       <div className="mt-8">
-        <h3 className="text-[18px] font-semibold text-[#101828] mb-2">
+        <h3 className="text-[14px] md:text-[16px] font-semibold text-[#101828] mb-2">
           Log out
         </h3>
-        <p className="text-[14px] text-[#6C6C6C] mb-4">
+        <p className="text-[13px] md:text-[14px] text-[#3B3B3B] mb-4 font-medium">
           This will sign you out of your account on this device but your data
           and preferences will remain saved. You can always log back in anytime
         </p>
-        <button
-          onClick={() => setShowLogoutModal(true)}
-          className="px-6 py-2.5 text-[14px] font-medium text-white bg-[#D92D20] rounded-lg hover:bg-[#b91c1c]"
-        >
-          Log out
-        </button>
+        <Button variant="destructive" className='!px-6 mt-4' onClick={() => setShowLogoutModal(true)} >Log out</Button>
       </div>
 
       {/* Modals */}

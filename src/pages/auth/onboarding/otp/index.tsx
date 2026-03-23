@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Card from '@/components/Card';
 import verifyMail from '@/assets/images/verifyMail.svg';
 import OtpInput from 'react18-input-otp';
@@ -12,6 +13,12 @@ import { handleError, sendMessage } from '@/utils/notify';
 import { useAppDispatch } from '@/hooks/redux-hooks';
 import { setNextpage } from '@/redux/auth/authSlice';
 import { trackAction } from '@/utils/AmpHelper';
+import { useMatchMedia } from '@/hooks/useMatchMedia';
+import {
+  AUTH,
+  authOtpFocusStyle,
+  authOtpInputStyle,
+} from '@/pages/auth/authPageStyles';
 
 const Otp = () => {
   const dispatch = useAppDispatch();
@@ -22,9 +29,7 @@ const Otp = () => {
   const [resendOtp] = useResendEmailOtpMutation();
   const [timer, setTimer] = useState(60);
   const [isTimerActive, setIsTimerActive] = useState(true);
-  const [inputStyle, setInputStyle] = useState({
-    border: '',
-  });
+  const compactOtp = useMatchMedia('(max-width: 400px)');
 
   useEffect(() => {
     if (timer > 0 && isTimerActive) {
@@ -44,11 +49,9 @@ const Otp = () => {
         await verifyEmail({ email, otp: otpValue }).unwrap();
         sendMessage('Your account has been created successfully', 'success');
         trackAction('User created', { email: email });
-        setInputStyle({ border: '1px solid #0F973D' });
         dispatch(setNextpage(`/auth/login?email=${email}`));
         navigate(`/auth/login?email=${email}`);
       } catch (error: any) {
-        setInputStyle({ border: '1px solid #FF2F2F' });
         dispatch(setNextpage(null));
         handleError(error?.data);
       }
@@ -61,63 +64,63 @@ const Otp = () => {
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
+  const otpBase = authOtpInputStyle({
+    hasError: isError && !isSuccess,
+    compact: compactOtp,
+  });
+  const otpInputMerged = {
+    ...otpBase,
+    ...(isSuccess ? { border: '1px solid #0F973D' } : {}),
+  };
+  const otpFocusMerged = isSuccess
+    ? { outline: 'none' as const, border: '1px solid #0F973D' }
+    : authOtpFocusStyle(isError && !isSuccess);
+
   return (
-    <div className="w-full h-full flex justify-center items-center">
-      <Card
-        borderRadius={'lg'}
-        className="2xl:w-[604px] w-[504px] flex flex-col items-center !shadow-none"
-      >
-        <img src={verifyMail} className="w-[96px]" />
-        <div className="flex flex-col w-[80%] py-4 space-y-6">
-          <Typography
-            variant="heading"
-            className="text-center !text-[2rem] font-medium font-[lora]"
-          >
-            Verify your email
-          </Typography>
+    <main className={AUTH.mainScroll}>
+      <div className={`${AUTH.center} py-6`}>
+        <Card
+          borderRadius={'lg'}
+          className={`${AUTH.cardShell} flex flex-col items-center !shadow-none max-w-[440px] sm:max-w-[504px] 2xl:max-w-[560px]`}
+        >
+          <img
+            src={verifyMail}
+            alt=""
+            className="w-[72px] sm:w-[88px] md:w-[96px] shrink-0"
+          />
+          <div className="flex flex-col w-full max-w-[min(100%,360px)] sm:w-[85%] py-4 space-y-4 md:space-y-6 px-2">
+            <Typography variant="heading" className={AUTH.titleCenter}>
+              Verify your email
+            </Typography>
 
-          <Typography
-            variant="body"
-            className="text-[#344054] font-400 text-center text-[16px]"
-          >
-            Enter the 6-digit code sent to{' '}
-            <span className="font-semibold block text-[#344054] text-foreground">
-              {email}
-            </span>
-          </Typography>
-        </div>
-
-        <form className="py-4 space-y-5">
-          <div className="mb-1 flex justify-center">
-            <OtpInput
-              value={otp}
-              onChange={handleChange}
-              numInputs={6}
-              isInputNum={true}
-              hasErrored={isError}
-              isSuccessed={isSuccess}
-              shouldAutoFocus
-              inputStyle={{
-                width: '64.67px',
-                height: '64px',
-                marginLeft: '5px',
-                marginRight: '5px',
-                color: '#1c1a3a',
-                fontSize: '32px',
-                fontWeight: 600,
-                background: '#F5F5F5',
-                borderRadius: '9.2px',
-                border: inputStyle.border,
-              }}
-              focusStyle={{
-                outline: 'none',
-                border: inputStyle.border,
-              }}
-              isInputSecure={false}
-            />
+            <Typography
+              variant="body"
+              className="text-[#344054] font-normal text-center text-[0.95rem] md:text-[16px] leading-snug"
+            >
+              Enter the 6-digit code sent to{' '}
+              <span className="font-semibold block text-[#344054] break-all mt-1">
+                {email}
+              </span>
+            </Typography>
           </div>
-          <div className="text-center">
-            <span className="text-[#6C6C6C] text-xs leading-[19.68px] font-[600]">
+
+          <form className="py-4 space-y-5 w-full px-2 max-w-full">
+            <div className="mb-1 w-full overflow-x-auto flex justify-center pb-1 -mx-1 px-1">
+              <OtpInput
+                value={otp}
+                onChange={handleChange}
+                numInputs={6}
+                isInputNum={true}
+                hasErrored={isError}
+                isSuccessed={isSuccess}
+                shouldAutoFocus
+                inputStyle={otpInputMerged}
+                focusStyle={otpFocusMerged}
+                isInputSecure={false}
+              />
+            </div>
+          <div className="text-center px-1">
+            <span className="text-[#6C6C6C] text-[11px] sm:text-xs leading-snug font-semibold">
               Didn’t receive OTP?{' '}
               <span
                 className={`text-[#ED79A9] cursor-pointer ${
@@ -144,7 +147,8 @@ const Otp = () => {
           </div>
         </form>
       </Card>
-    </div>
+      </div>
+    </main>
   );
 };
 

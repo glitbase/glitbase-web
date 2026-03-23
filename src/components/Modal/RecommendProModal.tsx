@@ -222,7 +222,7 @@ const RecommendProModal = ({ modalId }: RecommendProModalProps) => {
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="mx-auto max-w-[520px] w-full bg-white rounded-2xl p-6 max-h-[95vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-[28px] font-normal text-[#1D2739] font-[lora]">
+            <h2 className="text-[18px] md:text-[22px] font-semibold tracking-tight text-[#1D2739] font-[lora]">
               Recommend a pro
             </h2>
             <button
@@ -265,7 +265,6 @@ const RecommendProModal = ({ modalId }: RecommendProModalProps) => {
                   handleInputChange('businessType', selectedOption?.value || '')
                 }
                 placeholder="Business type"
-                className="!bg-[#F9FAFB] !border-none !rounded-lg"
               />
             </div>
 

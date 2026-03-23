@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { BookingItem, ServiceType } from '@/redux/booking/bookingSlice';
+import { MapPin, Star, Trash2 } from 'lucide-react';
+import { Button } from '@/components/Buttons';
 
 interface BookingSummaryCardProps {
   store?: {
@@ -37,6 +39,7 @@ interface BookingSummaryCardProps {
   onEditDate?: () => void;
   onEditTime?: () => void;
   onEditAddress?: () => void;
+  onRemoveItem?: (serviceId: string) => void;
 }
 
 const formatTimeLabel = (time?: string) => {
@@ -79,7 +82,9 @@ const BookingSummaryCard = (props: BookingSummaryCardProps) => {
     onEditDate,
     onEditTime,
     onEditAddress,
+    onRemoveItem,
   } = props;
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const currencySymbol = useMemo(() => {
     const symbols: Record<string, string> = { NGN: '₦', USD: '$', GBP: '£' };
     return symbols[currency] || currency;
@@ -88,7 +93,7 @@ const BookingSummaryCard = (props: BookingSummaryCardProps) => {
   if (!items.length) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border p-4 sticky top-28">
+    <div className="bg-white rounded-2xl border border-[#F0F0F0] p-4 sticky top-28">
       <div className="flex items-center space-x-3 mb-4">
         <div className="w-14 h-14 bg-gray-100 rounded-xl overflow-hidden">
           {store?.bannerImageUrl ? (
@@ -103,59 +108,19 @@ const BookingSummaryCard = (props: BookingSummaryCardProps) => {
             </div>
           )}
         </div>
-        <div className="flex-1 space-y-1">
-          <p className="font-[500] text-[#0A0A0A]">{store?.name}</p>
+        <div className="flex-1">
+          <p className="font-[500] text-[14px] text-[#0A0A0A] ">{store?.name}</p>
           {store?.rating && (
-            <p className="text-xs text-[#9D9D9D] flex items-center gap-1">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <g clip-path="url(#clip0_80_67427)">
-                  <path
-                    d="M9.15241 2.29677L10.3256 4.66257C10.4856 4.9919 10.9122 5.30779 11.2722 5.36827L13.3986 5.72449C14.7585 5.953 15.0784 6.94771 14.0985 7.92898L12.4454 9.59579C12.1654 9.87808 12.0121 10.4225 12.0987 10.8123L12.572 12.8756C12.9453 14.5089 12.0854 15.1406 10.6522 14.2871L8.65913 13.0974C8.29917 12.8824 7.7059 12.8824 7.33928 13.0974L5.34616 14.2871C3.91965 15.1406 3.05308 14.5021 3.42637 12.8756L3.89966 10.8123C3.98631 10.4225 3.833 9.87808 3.55303 9.59579L1.89988 7.92898C0.926651 6.94771 1.23995 5.953 2.5998 5.72449L4.72623 5.36827C5.07953 5.30779 5.50615 4.9919 5.66613 4.66257L6.83933 2.29677C7.47926 1.01306 8.51915 1.01306 9.15241 2.29677Z"
-                    fill="#0A0A0A"
-                    stroke="#0A0A0A"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </g>
-                <defs>
-                  <clipPath id="clip0_80_67427">
-                    <rect width="16" height="16" fill="white" />
-                  </clipPath>
-                </defs>
-              </svg>
+            <p className="text-xs text-[#9D9D9D] flex items-center gap-1 font-medium mb-1">
+              <Star size={12} fill="#0A0A0A" color="#0A0A0A" />
               {store.rating}{' '}
-              <span className="text-[#4C9A2A] font-[500]">
+              <span className="text-[#4C9A2A] text-xs font-[500] font-semibold">
                 ({store.reviewCount || 0})
               </span>
             </p>
           )}
-          <p className="text-sm text-[#9D9D9D] flex items-center gap-1">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M10.2133 16.0252C9.88804 16.3298 9.45329 16.5 9.00084 16.5C8.54839 16.5 8.11364 16.3298 7.78837 16.0252C4.80977 13.2195 0.818072 10.0852 2.7647 5.53475C3.81723 3.07437 6.34376 1.5 9.00084 1.5C11.6579 1.5 14.1845 3.07437 15.237 5.53475C17.1811 10.0795 13.1993 13.2292 10.2133 16.0252Z"
-                stroke="#9D9D9D"
-                stroke-width="1.5"
-              />
-              <path
-                d="M11.625 8.25C11.625 9.69975 10.4497 10.875 9 10.875C7.55025 10.875 6.375 9.69975 6.375 8.25C6.375 6.80025 7.55025 5.625 9 5.625C10.4497 5.625 11.625 6.80025 11.625 8.25Z"
-                stroke="#9D9D9D"
-                stroke-width="1.5"
-              />
-            </svg>
-
+          <p className="text-[11px] text-[#9D9D9D] flex items-center gap-1 font-medium">
+            <MapPin size={11} color="#9D9D9D" />
             {store?.location?.name}
           </p>
         </div>
@@ -446,40 +411,74 @@ const BookingSummaryCard = (props: BookingSummaryCardProps) => {
         </div>
       )}
 
-      <div className="space-y-4">
-        <h4 className="font-medium text-gray-900">Service details</h4>
+      <div className="space-y-4 mt-8">
+        <h4 className="font-medium text-gray-900 text-[14px]">Service details</h4>
         <div className="space-y-4">
           {items.map((item) => (
-            <div key={item.serviceId} className="flex space-x-3">
-              <div className="w-14 h-14 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500">
-                    💇
+            <div key={item.serviceId}>
+              <div className="flex space-x-3">
+                <div className="w-[70px] h-[70px] bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                      💇
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    <p className="font-medium text-[#0A0A0A] text-[14px] mb-1">{item.name}</p>
+                    {onRemoveItem && (
+                      <button
+                        onClick={() => setConfirmRemoveId(item.serviceId)}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 ml-2"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{item.name}</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {currencySymbol}
-                  {item.price.toLocaleString()}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {Math.floor(item.durationInMinutes / 60)}hr{' '}
-                  {item.durationInMinutes % 60}min
-                </p>
-                {item.addOns?.length ? (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Add-ons: {item.addOns.map((a) => a.name).join(', ')}
+                  <p className="text-sm font-semibold text-[14px] text-[#0A0A0A] mb-2">
+                    {currencySymbol}
+                    {item.price.toLocaleString()}
                   </p>
-                ) : null}
+                  <p className="text-[12px] font-medium text-[#9D9D9D]">
+                    {Math.floor(item.durationInMinutes / 60)}hr{' '}
+                    {item.durationInMinutes % 60}min
+                  </p>
+                  {item.addOns?.length ? (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Add-ons: {item.addOns.map((a) => a.name).join(', ')}
+                    </p>
+                  ) : null}
+                </div>
               </div>
+              {/* Inline remove confirmation */}
+              {confirmRemoveId === item.serviceId && (
+                <div className="mt-2 flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
+                  <p className="text-xs text-red-600 flex-1 font-medium">Remove this service?</p>
+                  <button
+                    onClick={() => setConfirmRemoveId(null)}
+                    className="text-xs text-gray-500 font-medium hover:text-gray-700 px-2 py-1 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      onRemoveItem!(item.serviceId);
+                      setConfirmRemoveId(null);
+                    }}
+                    className="text-xs text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-lg"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -524,14 +523,14 @@ const BookingSummaryCard = (props: BookingSummaryCardProps) => {
           </div>
         )}
 
-        {showCTA && (
-          <button
-            onClick={onBookNow}
-            className="w-full bg-[#4C9A2A] text-white rounded-full py-3 font-semibold hover:bg-[#3d7a22] transition-colors"
-          >
+        <div className='!mt-24'>
+          {showCTA && (
+          <Button size="full" onClick={onBookNow}>
             Book now
-          </button>
+          </Button>
         )}
+        </div>
+        
       </div>
     </div>
   );

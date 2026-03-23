@@ -18,6 +18,17 @@ const SearchResults = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'services' | 'stores'>('services');
 
+  const tabs = [
+    {
+      label: 'Services',
+      value: 'services',
+    },
+    {
+      label: 'Stores',
+      value: 'stores',
+    },
+  ];
+
   // Filter states
   const [filters, setFilters] = useState({
     sortBy: undefined as
@@ -82,21 +93,21 @@ const SearchResults = () => {
 
   return (
     <HomeLayout isLoading={false} onSearch={handleSearch}>
-      <div className="px-12 py-6 min-h-screen">
+      <div className="p-4 min-h-screen mt-4 md:mt-0">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-0 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <IoChevronBack size={24} className="text-[#1D2739]" />
+              <IoChevronBack size={20} className="text-[#1D2739]" />
             </button>
             <div>
-              <h1 className="text-[32px] font-semibold text-[#1D2739] font-[lora]">
+              <h1 className="text-[15px] md:text-[18px] font-semibold text-[#1D2739] font-[lora] tracking-tight">
                 Search Results
               </h1>
-              <p className="text-[16px] text-[#6C6C6C] mt-1">
+              <p className="text-[11px] md:text-[13px] text-[#6C6C6C] font-medium">
                 {searchQuery && (
                   <>
                     Showing results for "
@@ -109,7 +120,7 @@ const SearchResults = () => {
 
           <button
             onClick={() => setShowFilterModal(true)}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors bg-[#FAFAFA]"
+            className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-2xl hover:bg-gray-50 transition-colors bg-[#FAFAFA]"
           >
             <svg
               width="16"
@@ -157,7 +168,7 @@ const SearchResults = () => {
                 strokeWidth="1.5"
               />
             </svg>
-            <span className="text-[14px] font-medium text-[#1D2739]">
+            <span className="text-[12px] md:text-[14px] font-medium text-[#1D2739]">
               Filters
             </span>
             {hasActiveFilters && (
@@ -167,44 +178,31 @@ const SearchResults = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-6 mb-8 border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('services')}
-            className={`pb-4 px-2 text-[16px] font-medium transition-colors relative ${
-              activeTab === 'services'
-                ? 'text-[#4C9A2A]'
-                : 'text-[#6C6C6C] hover:text-[#1D2739]'
-            }`}
-          >
-            Services
-            {services.length > 0 && (
-              <span className="ml-2 text-[14px]">({services.length})</span>
-            )}
-            {activeTab === 'services' && (
-              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4C9A2A]" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('stores')}
-            className={`pb-4 px-2 text-[16px] font-medium transition-colors relative ${
-              activeTab === 'stores'
-                ? 'text-[#4C9A2A]'
-                : 'text-[#6C6C6C] hover:text-[#1D2739]'
-            }`}
-          >
-            Stores
-            {stores.length > 0 && (
-              <span className="ml-2 text-[14px]">({stores.length})</span>
-            )}
-            {activeTab === 'stores' && (
-              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4C9A2A]" />
-            )}
-          </button>
+        <div className="flex items-center gap-3 mb-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value as 'services' | 'stores')}
+              className={`py-2 md:py-3 px-4 md:px-6 rounded-lg text-[12px] md:text-[14px] font-semibold transition-colors relative ${
+                activeTab === tab.value
+                  ? 'text-primary bg-[#EBFEE3]'
+                  : 'text-[#9D9D9D] hover:text-primary'
+              }`}
+            >
+              {tab.label}
+              {/* {tab.value === 'services' && services.length > 0 && (
+                <span className="ml-2 text-[14px]">({services.length})</span>
+              )}
+              {tab.value === 'stores' && stores.length > 0 && (
+                <span className="ml-2 text-[14px]">({stores.length})</span>
+              )} */}
+            </button>
+          ))}
         </div>
 
         {/* Loading State */}
         {(isLoading || isFetching) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
             {Array.from({ length: 8 }).map((_, index) =>
               activeTab === 'services' ? (
                 <ServiceCardSkeleton key={`skeleton-${index}`} />
@@ -219,17 +217,17 @@ const SearchResults = () => {
         {!isLoading && !isFetching && activeTab === 'services' && (
           <>
             {services.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {services.map((service: any) => (
                   <ServiceCard key={service.id} item={service} />
                 ))}
               </div>
             ) : (
               <div className="text-center py-16">
-                <p className="text-[18px] text-[#6C6C6C] mb-2">
+                <p className="text-[16px] md:text-[18px] text-[#6C6C6C] mb-1 font-bold font-[lora] tracking-tight">
                   No services found
                 </p>
-                <p className="text-[14px] text-[#9C9C9C]">
+                <p className="text-[12px] md:text-[14px] text-[#9C9C9C] font-medium">
                   Try adjusting your search or filters
                 </p>
               </div>
@@ -241,17 +239,17 @@ const SearchResults = () => {
         {!isLoading && !isFetching && activeTab === 'stores' && (
           <>
             {stores.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
                 {stores.map((store: any) => (
                   <ProviderCard key={store.id} item={store} />
                 ))}
               </div>
             ) : (
               <div className="text-center py-16">
-                <p className="text-[18px] text-[#6C6C6C] mb-2">
+                <p className="text-[16px] md:text-[18px] text-[#6C6C6C] mb-1 font-bold font-[lora] tracking-tight">
                   No stores found
                 </p>
-                <p className="text-[14px] text-[#9C9C9C]">
+                <p className="text-[12px] md:text-[14px] text-[#9C9C9C] font-medium">
                   Try adjusting your search or filters
                 </p>
               </div>

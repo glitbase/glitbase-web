@@ -3,12 +3,19 @@ import { rootReducer } from './root-reducer';
 import { authApi } from './auth';
 import { useDispatch as useReduxDispatch } from 'react-redux';
 import { setupListeners } from '@reduxjs/toolkit/query';
-// import { paymentApi } from "./payment";
+import { paymentApi } from './payment';
 // import { disputeApi } from "./dispute";
 import { appApi } from './app';
 import { entityApi } from './entity';
 import { vendorApi } from './vendor';
 import { bookingApi } from './booking';
+import { chatApi } from './chat';
+import { notificationsApi } from './notifications';
+import { glitfinderApi } from './glitfinder';
+import { glitsApi } from './glits';
+import { glitboardsApi } from './glitboards';
+import { glitNotesApi } from './glitNotes';
+import { reportsApi } from './reports';
 
 // Determine if the development tools should be enabled
 const devtool = (import.meta.env.VITE_ENV === 'DEV') === true;
@@ -20,7 +27,15 @@ const middleware = (getDefaultMiddleware: any) =>
     authApi.middleware,
     entityApi.middleware,
     vendorApi.middleware,
-    bookingApi.middleware
+    bookingApi.middleware,
+    chatApi.middleware,
+    notificationsApi.middleware,
+    glitfinderApi.middleware,
+    glitsApi.middleware,
+    glitboardsApi.middleware,
+    glitNotesApi.middleware,
+    paymentApi.middleware,
+    reportsApi.middleware
   );
 
 export const store = configureStore({

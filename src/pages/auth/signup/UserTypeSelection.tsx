@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Buttons';
 import { Typography } from '@/components/Typography';
@@ -6,6 +6,8 @@ import Card from '@/components/Card';
 import { toast } from 'react-toastify';
 import rolefill from '@/assets/images/rolefill.svg';
 import roleoutline from '@/assets/images/roleoutline.svg';
+import { isFirstVisit } from '@/utils/helpers';
+import { AUTH } from '@/pages/auth/authPageStyles';
 
 interface UserType {
   name: string;
@@ -19,6 +21,13 @@ const UserTypeSelection = () => {
   const [selectedUserType, setSelectedUserType] = useState<
     'customer' | 'vendor' | ''
   >('');
+
+  // Redirect first-time visitors to splash screen
+  useEffect(() => {
+    if (isFirstVisit()) {
+      navigate('/auth/');
+    }
+  }, [navigate]);
 
   const userTypes: UserType[] = [
     {
@@ -45,18 +54,28 @@ const UserTypeSelection = () => {
   };
 
   return (
-    <main className="h-screen w-full !bg-[white]">
-      <div className="flex justify-end py-8 px-12">
-        <div className="flex items-center space-x-2">
-          <p className="text-[13px] text-[#344054]">Already have an account?</p>
-          <Button onClick={() => navigate('/auth/login')} variant="noBorder">
-            Sign in
-          </Button>
-        </div>
+    <main className={`${AUTH.main} relative`}>
+      <div
+        className={`${AUTH.topLink} flex flex-wrap items-center justify-end gap-x-1 gap-y-0 max-w-[calc(100%-1rem)] ml-auto`}
+      >
+        <span className="text-[#6C6C6C]">Already have an account?</span>
+        <Button
+          onClick={() => {
+            if (isFirstVisit()) {
+              navigate('/auth/');
+            } else {
+              navigate('/auth/login');
+            }
+          }}
+          variant="noBorder"
+          className="!p-0 !h-auto min-h-0 text-[14px] md:text-base font-semibold text-[#CC5A88]"
+        >
+          Sign in
+        </Button>
       </div>
 
-      <div className="flex justify-center items-center px-4 md:px-20">
-        <Card className="rounded-sm py-5 px-4 md:px-12 w-full max-w-[510px] !shadow-none">
+      <div className={AUTH.center}>
+        <Card className={`${AUTH.cardShell} !shadow-none`}>
           {/* Progress indicator */}
           <div className="mb-6">
             <div className="w-full bg-gray-200 rounded-full h-1">
@@ -67,33 +86,29 @@ const UserTypeSelection = () => {
             </div>
           </div>
 
-          <div className="space-y-2 flex justify-center flex-col items-start">
-            <Typography
-              variant="heading"
-              className="text-left !text-[2rem] font-medium font-[lora]"
-            >
+          <div className="space-y-2 flex justify-center flex-col items-start w-full">
+            <Typography variant="heading" className={AUTH.title}>
               What's your role?
             </Typography>
-            <p className="text-left font-medium text-[1rem] text-[#6C6C6C] !mt-3">
+            <p className={`${AUTH.subtitle} !mt-2 md:!mt-3 leading-[1.35]`}>
               Select your role so we can personalize your experience based on
               your goals
             </p>
           </div>
 
-          <div className="mt-12 space-y-4">
+          <div className="mt-8 md:mt-12 space-y-3 md:space-y-4 w-full">
             {userTypes.map((option) => (
               <div
                 key={option.value}
                 onClick={() => setSelectedUserType(option.value)}
-                className={`border rounded-lg p-4 cursor-pointer flex items-center justify-between transition-all
-                ${
-                  selectedUserType === option.value
+                className={`border rounded-lg p-3 sm:p-4 cursor-pointer flex items-center justify-between gap-3 min-w-0 transition-all
+                ${selectedUserType === option.value
                     ? 'border-[#CC5A88] bg-[#FFEFF6]'
                     : 'border-gray-200'
-                }`}
+                  }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg flex items-center justify-center">
                     <img
                       src={
                         selectedUserType === option.value
@@ -101,45 +116,43 @@ const UserTypeSelection = () => {
                           : roleoutline
                       }
                       alt={option.name}
+                      className="max-w-full max-h-full"
                     />
                   </div>
-                  <div>
-                    <h3 className="font-medium text-[#101928] ">
+                  <div className="min-w-0">
+                    <h3 className="font-medium text-[#101928] text-[0.95rem] md:text-base">
                       As a {option.name}
                     </h3>
-                    <p className="text-[.7rem] text-[#999999] max-w-[220px]">
+                    <p className="text-[0.7rem] sm:text-[0.75rem] text-[#999999] max-w-none sm:max-w-[280px]">
                       {option.description}
                     </p>
                   </div>
                 </div>
                 <div
                   className={`w-4 h-4 rounded-full border flex items-center justify-center
-                    ${
-                      selectedUserType === option.value
-                        ? 'border-[#CC5A88] bg-white'
-                        : 'border-gray-300'
+                    ${selectedUserType === option.value
+                      ? 'border-[#CC5A88] bg-white'
+                      : 'border-gray-300'
                     }`}
                 >
                   <div
-                    className={`w-2 h-2 rounded-full ${
-                      selectedUserType === option.value ? 'bg-[#CC5A88]' : ''
-                    }`}
+                    className={`w-2 h-2 rounded-full ${selectedUserType === option.value ? 'bg-[#CC5A88]' : ''
+                      }`}
                   />
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-16 mb-12">
+          <div className="mt-10 md:mt-16 mb-8 md:mb-12">
             <Button
               onClick={handleContinue}
               disabled={!selectedUserType}
-              className={`w-full py-3 rounded-lg
-              ${
-                selectedUserType
+              className={`w-full py-3 rounded-lg min-w-0
+              ${selectedUserType
                   ? 'bg-[#60983C] text-white hover:bg-[#4d7a30]'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
+                }`}
             >
               Continue
             </Button>

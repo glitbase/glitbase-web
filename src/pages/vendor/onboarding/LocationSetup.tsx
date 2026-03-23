@@ -8,6 +8,7 @@ import { useCreateStoreMutation } from '@/redux/vendor';
 import { toast } from 'react-toastify';
 import LocationSelector from '@/components/LocationSelector';
 import AuthLayout from '@/layout/auth';
+import { GoBack } from '@/components/GoBack';
 
 interface Location {
   name: string;
@@ -24,14 +25,14 @@ interface Location {
 const LocationSetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get data passed from previous steps via navigation state
   const storeData = location.state?.storeData || {};
-  
+
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     storeData.location || null
   );
-  const [noFixedAddress, setNoFixedAddress] = useState(false);
+  const [noFixedAddress] = useState(false);
   const [createStore, { isLoading }] = useCreateStoreMutation();
 
   const handleLocationSelect = (loc: Location) => {
@@ -58,16 +59,16 @@ const LocationSetup = () => {
         location: noFixedAddress
           ? null
           : {
-              name: selectedLocation!.name,
-              address: selectedLocation!.address,
-              city: selectedLocation!.city,
-              state: selectedLocation!.state,
-              zipcode: selectedLocation!.zipcode,
-              coordinates: {
-                latitude: selectedLocation!.coordinates.latitude,
-                longitude: selectedLocation!.coordinates.longitude,
-              },
+            name: selectedLocation!.name,
+            address: selectedLocation!.address,
+            city: selectedLocation!.city,
+            state: selectedLocation!.state,
+            zipcode: selectedLocation!.zipcode,
+            coordinates: {
+              latitude: selectedLocation!.coordinates.latitude,
+              longitude: selectedLocation!.coordinates.longitude,
             },
+          },
         openingHours: [],
       };
 
@@ -76,7 +77,7 @@ const LocationSetup = () => {
       } catch (error: any) {
         toast.error(
           error?.data?.message ||
-            'An error occurred while creating the store. Please try again.'
+          'An error occurred while creating the store. Please try again.'
         );
         return;
       }
@@ -96,46 +97,25 @@ const LocationSetup = () => {
   return (
     <AuthLayout isLoading={false}>
       <VendorOnboardingLayout progress={65} currentStep={6}>
-        <div className="px-4 mx-auto pb-8 max-w-[600px] flex flex-col items-center">
-          <div className="w-full mb-6">
-            <button
-              onClick={() => navigate('/vendor/onboarding/visibility', {
-                state: { storeData }
-              })}
-              className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 12H5M12 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
+        <div className="mx-auto pb-8 max-w-[600px] flex flex-col items-center">
+          <div className="w-full mb-6 mt-12">
+            <GoBack className='text-[1.3rem] mb-5' />
 
             <Typography
               variant="heading"
-              className="text-start !text-[2rem] font-semibold font-[lora]"
+              className="text-left !text-[1.7rem] font-bold font-[lora] text-[#0A0A0A]"
             >
-              Where is your store located?
+              Boost your visibility
             </Typography>
-            <p className="text-start font-normal text-[1rem] text-[#667185] !mt-3">
-              Add your store address so nearby customers can discover your
-              business
+            <p className="text-left font-medium text-[1rem] text-[#6C6C6C] !mt-2">
+              Add up to 5 keywords for Glitfinder and Glitmatch tags so customers can discover your business easily
             </p>
           </div>
 
-          <div className="w-full py-6 space-y-6">
+          <div className="w-full space-y-12 mt-3">
             {/* Location Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#0A0A0A] mb-2">
                 Address
               </label>
               <div
@@ -146,39 +126,14 @@ const LocationSetup = () => {
                 <LocationSelector
                   onLocationSelect={handleLocationSelect}
                   placeholder="Address"
+                  value={selectedLocation ? selectedLocation.address : undefined}
                 />
               </div>
 
-              {/* Selected Location Display */}
-              {selectedLocation && !noFixedAddress && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-gray-400 mt-0.5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedLocation.address}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {selectedLocation.city}, {selectedLocation.state}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* No Fixed Address Checkbox */}
-            <div className="flex items-start gap-3">
+            {/* <div className="flex items-start gap-3">
               <input
                 type="checkbox"
                 id="no-fixed-address"
@@ -197,7 +152,7 @@ const LocationSetup = () => {
               >
                 No fixed business address - online/mobile services only
               </label>
-            </div>
+            </div> */}
 
             {/* Continue Button */}
             <div className="mt-8">

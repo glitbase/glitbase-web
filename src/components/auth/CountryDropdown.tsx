@@ -12,18 +12,18 @@ export const countries: Country[] = [
     name: 'Nigeria',
     code: 'NG',
     dialCode: '+234',
-    flag: '🇳🇬',
+    flag: "https://cdn-icons-png.flaticon.com/128/5922/5922004.png",
   },
   {
     name: 'United Kingdom',
     code: 'GB',
     dialCode: '+44',
-    flag: '🇬🇧',
+    flag: "https://cdn-icons-png.flaticon.com/128/8363/8363075.png",
   },
 ];
 
 interface CountryDropdownProps {
-  selectedCountry: Country;
+  selectedCountry: Country | null;
   onSelectCountry: (country: Country) => void;
 }
 
@@ -35,17 +35,23 @@ export const CountryDropdown = ({
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Country
+      <label className="block text-sm font-medium text-[#0A0A0A] mb-1">
+      Country of residence
       </label>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-2.5 border border-gray-200 rounded-md text-left flex justify-between items-center bg-white hover:border-gray-300 transition-colors"
+        className="w-full px-4 h-[50px] rounded-lg text-left flex justify-between items-center bg-[#FAFAFA] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-lg">{selectedCountry.flag}</span>
-          <span className="text-gray-900">{selectedCountry.name}</span>
+          {selectedCountry ? (
+            <>
+              <img src={selectedCountry?.flag} alt={selectedCountry?.name} className="w-5 h-5" />
+              <span className="text-[#3B3B3B] font-medium text-sm">{selectedCountry?.name}</span>
+            </>
+          ) : (
+            <span className="text-[#9D9D9D] font-medium text-sm">Country</span>
+          )}
         </div>
         <svg
           className={`w-5 h-5 text-gray-400 transition-transform ${
@@ -70,7 +76,7 @@ export const CountryDropdown = ({
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-md shadow-lg">
+          <div className="absolute z-20 w-full mt-2 bg-white rounded-md shadow-sm">
             {countries.map((country) => (
               <button
                 key={country.code}
@@ -80,15 +86,14 @@ export const CountryDropdown = ({
                   setIsOpen(false);
                 }}
                 className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
-                  selectedCountry.code === country.code ? 'bg-[#FFEFF6]' : ''
+                  selectedCountry?.code === country.code ? 'bg-[#FFEFF6]' : ''
                 }`}
               >
-                <span className="text-lg">{country.flag}</span>
+                <img src={country.flag} alt={country.name} className="w-5 h-5" />
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{country.name}</p>
-                  <p className="text-sm text-gray-500">{country.dialCode}</p>
+                  <p className="font-medium text-sm text-[#0A0A0A]">{country.name}</p>
                 </div>
-                {selectedCountry.code === country.code && (
+                {selectedCountry?.code === country.code && (
                   <svg
                     className="w-5 h-5 text-[#CC5A88]"
                     fill="currentColor"

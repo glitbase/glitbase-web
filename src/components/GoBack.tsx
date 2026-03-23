@@ -1,7 +1,7 @@
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { HiArrowNarrowLeft } from 'react-icons/hi';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 
 const goBackVariants = cva('flex items-center cursor-pointer', {
   variants: {
@@ -12,13 +12,13 @@ const goBackVariants = cva('flex items-center cursor-pointer', {
       secondary: 'text-secondary',
     },
     size: {
-      sm: 'p-2 text-sm',
-      md: 'p-3 text-[14px] font-[600]',
+      sm: 'text-sm',
+      md: 'text-[14px] font-[600]',
       lg: 'py-4 text-lg',
     },
   },
   defaultVariants: {
-    variant: 'primary',
+    variant: 'default',
     size: 'md',
   },
 });
@@ -28,6 +28,7 @@ interface GoBackProps
     VariantProps<typeof goBackVariants> {
   onBack?: () => void;
   text?: string;
+  color?: string;
 }
 
 const GoBack: React.FC<GoBackProps> = ({
@@ -36,6 +37,7 @@ const GoBack: React.FC<GoBackProps> = ({
   variant,
   size,
   className,
+  color,
   ...props
 }) => {
   const navigate = useNavigate();
@@ -49,7 +51,7 @@ const GoBack: React.FC<GoBackProps> = ({
       })}
       {...props}
     >
-      <HiArrowNarrowLeft className="mr-2" />
+      <HiArrowNarrowLeft className="mr-2" color={color} />
       <span>{text}</span>
     </button>
   );

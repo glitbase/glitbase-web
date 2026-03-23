@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { IoClose } from 'react-icons/io5';
-import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
+import { PasswordInput } from '../Inputs/PasswordInput';
+import { isPasswordValid, PasswordRequirements } from '../auth';
+import { Button } from '../Buttons';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -17,29 +19,31 @@ const ChangePasswordModal = ({
 }: ChangePasswordModalProps) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const handleSubmit = () => {
     if (!currentPassword || !newPassword) {
       return;
     }
     onSubmit(currentPassword, newPassword);
+    setCurrentPassword('');
+    setNewPassword('');
   };
 
   const handleClose = () => {
     setCurrentPassword('');
     setNewPassword('');
-    setShowCurrentPassword(false);
-    setShowNewPassword(false);
     onClose();
   };
 
   if (!isOpen) return null;
 
+  const isFormValid = () => {
+    return currentPassword.trim() !== '' && newPassword.trim() !== '' && isPasswordValid(newPassword);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-[20px] max-w-[500px] w-full mx-4 p-8 relative">
+      <div className="bg-white rounded-[20px] max-w-[500px] w-full mx-4 p-6 md:p-8 relative">
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -50,81 +54,39 @@ const ChangePasswordModal = ({
         </button>
 
         {/* Title */}
-        <h2 className="text-[28px] font-semibold text-[#101828] mb-3">
+        <h2 className="text-[18px] md:text-[22px] font-semibold text-[#101828] mb-1 font-[lora] tracking-tight">
           Create new password
         </h2>
 
         {/* Subtitle */}
-        <p className="text-[14px] text-[#6C6C6C] mb-6">
-          Enter your current password and create a strong new password
+        <p className="text-[13px] md:text-[14px] text-[#6C6C6C] mb-6 font-medium">
+        Create a strong new password to secure your account
         </p>
 
         {/* Current Password */}
         <div className="mb-4">
-          <label className="block text-[14px] font-medium text-[#344054] mb-2">
-            Current password
-          </label>
-          <div className="relative">
-            <input
-              type={showCurrentPassword ? 'text' : 'password'}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Current password"
-              disabled={isLoading}
-              className="w-full px-4 py-3 pr-12 text-[16px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D7B22] focus:border-transparent disabled:opacity-50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              disabled={isLoading}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              {showCurrentPassword ? (
-                <AiOutlineEyeInvisible size={20} />
-              ) : (
-                <AiOutlineEye size={20} />
-              )}
-            </button>
-          </div>
+          <PasswordInput
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            label="Current password"
+            placeholder="Current password"
+            disabled={isLoading}
+          />
         </div>
-
         {/* New Password */}
         <div className="mb-6">
-          <label className="block text-[14px] font-medium text-[#344054] mb-2">
-            New password
-          </label>
-          <div className="relative">
-            <input
-              type={showNewPassword ? 'text' : 'password'}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="New password"
-              disabled={isLoading}
-              className="w-full px-4 py-3 pr-12 text-[16px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D7B22] focus:border-transparent disabled:opacity-50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowNewPassword(!showNewPassword)}
-              disabled={isLoading}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              {showNewPassword ? (
-                <AiOutlineEyeInvisible size={20} />
-              ) : (
-                <AiOutlineEye size={20} />
-              )}
-            </button>
-          </div>
+        <PasswordInput
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            label="New password"
+            placeholder="New password"
+            disabled={isLoading}
+          />
+          <PasswordRequirements password={newPassword} />
         </div>
 
         {/* Submit button */}
-        <button
-          onClick={handleSubmit}
-          disabled={!currentPassword || !newPassword || isLoading}
-          className="w-full px-4 py-3 text-[16px] font-medium text-white bg-[#3D7B22] rounded-lg hover:bg-[#2d5c19] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? 'Submitting...' : 'Submit'}
-        </button>
+        <Button variant="default" className='w-full' loading={isLoading} onClick={handleSubmit} disabled={!isFormValid() || isLoading} >Submit</Button>
       </div>
     </div>
   );

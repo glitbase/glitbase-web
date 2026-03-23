@@ -44,6 +44,22 @@
 
 @font-face {
   font-family: 'Lora';
+  src: url('./assets/fonts/Lora-Medium.woff') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lora';
+  src: url('./assets/fonts/Lora-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lora';
   src: url('./assets/fonts/Lora-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
@@ -137,31 +153,33 @@ body {
   background-size: 1000px 100%;
 }
 
-/* Custom Toast Styles */
+/* Custom Toast Styles (~30% smaller) */
 .Toastify__toast {
   font-family: 'General Sans', sans-serif !important;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .Toastify__toast-body {
   padding: 0;
   margin: 0;
   color: white;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .Toastify__close-button {
   color: white;
   opacity: 1;
   align-self: center;
+  font-size: 14px;
 }
 
 .Toastify__close-button:hover {
   color: #d1d5db;
 }
+

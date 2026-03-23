@@ -80,8 +80,7 @@ const PaymentBillingsTab = () => {
           />
         </svg>
       ),
-      path: '/settings/payment-billings/manage-subscriptions',
-      disabled: true,
+      path: '/settings/payment-billings/manage-subscriptions'
     },
     {
       id: 'policy',
@@ -128,25 +127,16 @@ const PaymentBillingsTab = () => {
           return (
             <div
               key={card.id}
-              onClick={() => !card.disabled && navigate(card.path)}
-              className={`relative bg-[#FAFAFA] rounded-[16px] p-6 transition-all ${
-                card.disabled
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'cursor-pointer hover:border-[#3D7B22] hover:shadow-md'
-              }`}
+              onClick={() => navigate(card.path)}
+              className={`relative bg-[#FAFAFA] rounded-[16px] p-4 transition-all cursor-pointer hover:border-[#3D7B22] hover:shadow-md`}
             >
-              {card.disabled && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-[16px] z-10" />
-              )}
-              <div className="mb-4">
-                <div className="w-12 h-12  rounded-full flex items-center justify-center">
+              <div className="mb-4 mt-2">
                   {card.icon}
-                </div>
               </div>
-              <h3 className="text-[18px] font-semibold text-[#101828] mb-2">
+              <h3 className="text-[15px] font-semibold text-[#101828] mb-2">
                 {card.title}
               </h3>
-              <p className="text-[14px] text-[#6C6C6C]">{card.description}</p>
+              <p className="text-[13px] text-[#6C6C6C] font-medium max-w-[240px]">{card.description}</p>
             </div>
           );
         })}

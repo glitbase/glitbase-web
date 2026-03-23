@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { useFetchMarketplaceCategoriesQuery } from '@/redux/app';
+import { Button } from '../Buttons';
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -90,8 +91,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-[24px] font-semibold text-[#1D2739] font-[lora]">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-2 md:py-4 flex items-center justify-between rounded-t-2xl">
+          <h2 className="text-[18px] md:text-[24px] font-semibold text-[#1D2739] font-[lora]">
             Filters
           </h2>
           <button
@@ -103,10 +104,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-8">
+        <div className="p-4 md:p-6 space-y-8">
           {/* Sort By */}
           <div>
-            <label className="block text-[16px] font-semibold text-[#1D2739] mb-4">
+            <label className="block text-[14px] md:text-[16px] font-semibold text-[#1D2739] mb-4">
               Sort By
             </label>
             <div className="flex gap-3">
@@ -116,7 +117,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               ].map((option) => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-3 cursor-pointer"
+                  className="flex items-center gap-3 cursor-pointer font-medium"
                 >
                   <input
                     type="radio"
@@ -125,7 +126,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     onChange={() => onFilterChange('sortBy', option.value)}
                     className="w-5 h-5 text-[#4C9A2A] focus:ring-[#4C9A2A]"
                   />
-                  <span className="text-[14px] text-[#1D2739]">
+                  <span className="text-[12px] md:text-[14px] text-[#1D2739]">
                     {option.label}
                   </span>
                 </label>
@@ -135,7 +136,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Booking Type */}
           <div>
-            <label className="block text-[16px] font-semibold text-[#1D2739] mb-4">
+            <label className="block text-[14px] md:text-[16px] font-semibold text-[#1D2739] mb-4">
               Booking type
             </label>
             <div className="flex flex-wrap gap-3">
@@ -147,7 +148,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 <button
                   key={option.value}
                   onClick={() => handleBookingTypeToggle(option.value)}
-                  className={`px-4 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+                  className={`px-4 py-2.5 rounded-lg text-[12px] md:text-[14px] font-medium transition-colors ${
                     filters.bookingType?.includes(option.value)
                       ? 'bg-[#4C9A2A] text-white'
                       : 'bg-[#F5F5F5] text-[#1D2739] hover:bg-[#E8E8E8]'
@@ -161,7 +162,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Service Category */}
           <div>
-            <label className="block text-[16px] font-semibold text-[#1D2739] mb-4">
+            <label className="block text-[14px] md:text-[16px] font-semibold text-[#1D2739] mb-4">
               Service category
             </label>
             <div className="flex flex-wrap gap-3">
@@ -174,7 +175,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                       filters.category === cat.name ? undefined : cat.name
                     )
                   }
-                  className={`px-4 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+                  className={`px-4 py-2.5 rounded-lg text-[12px] md:text-[14px] font-medium transition-colors ${
                     filters.category === cat.name
                       ? 'bg-[#4C9A2A] text-white'
                       : 'bg-[#F5F5F5] text-[#1D2739] hover:bg-[#E8E8E8]'
@@ -188,7 +189,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Availability */}
           <div>
-            <label className="block text-[16px] font-semibold text-[#1D2739] mb-4">
+            <label className="block text-[14px] md:text-[16px] font-semibold text-[#1D2739] mb-4">
               Availability
             </label>
             <div className="space-y-3">
@@ -202,7 +203,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   key={option.value}
                   className="flex items-center justify-between cursor-pointer"
                 >
-                  <span className="text-[14px] text-[#1D2739]">
+                  <span className="text-[12px] md:text-[14px] text-[#1D2739] font-medium">
                     {option.label}
                   </span>
                   <input
@@ -221,7 +222,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Distance */}
           <div>
-            <label className="block text-[16px] font-semibold text-[#1D2739] mb-4">
+            <label className="block text-[14px] md:text-[16px] font-semibold text-[#1D2739] mb-4">
               Distance
             </label>
             <div className="flex flex-wrap gap-3">
@@ -241,7 +242,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                         : option.value
                     )
                   }
-                  className={`px-4 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+                  className={`px-4 py-2.5 rounded-lg text-[12px] md:text-[14px] font-medium transition-colors ${
                     filters.distance === option.value
                       ? 'bg-[#4C9A2A] text-white'
                       : 'bg-[#F5F5F5] text-[#1D2739] hover:bg-[#E8E8E8]'
@@ -255,7 +256,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Appointment Duration */}
           <div>
-            <label className="block text-[16px] font-semibold text-[#1D2739] mb-4">
+            <label className="block text-[14px] md:text-[16px] font-semibold text-[#1D2739] mb-4">
               Appointment duration
             </label>
             <div className="flex flex-wrap gap-3">
@@ -276,7 +277,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                         : option.value
                     )
                   }
-                  className={`px-4 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+                  className={`px-4 py-2.5 rounded-lg text-[12px] md:text-[14px] font-medium transition-colors ${
                     filters.duration === option.value
                       ? 'bg-[#4C9A2A] text-white'
                       : 'bg-[#F5F5F5] text-[#1D2739] hover:bg-[#E8E8E8]'
@@ -290,7 +291,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Price Range */}
           <div>
-            <label className="block text-[16px] font-semibold text-[#1D2739] mb-4">
+            <label className="block text-[14px] md:text-[16px] font-semibold text-[#1D2739] mb-4">
               Price range
             </label>
             <div className="space-y-4">
@@ -311,7 +312,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   }%, #E5E7EB ${(priceValue / 1000000) * 100}%, #E5E7EB 100%)`,
                 }}
               />
-              <div className="flex justify-between text-[12px] text-[#6C6C6C]">
+              <div className="flex justify-between text-[12px] md:text-[14px] text-[#6C6C6C]">
                 <span>Any price</span>
                 <span>£1,000,000+</span>
               </div>
@@ -338,15 +339,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
             >
               Cancel
             </button>
-            <button
+            <Button
               onClick={() => {
                 onApplyFilters();
                 onClose();
               }}
-              className="px-6 py-3 rounded-lg text-[14px] font-medium text-white bg-[#4C9A2A] hover:bg-[#3d7b22] transition-colors"
+              className="px-6 py-3 text-[14px] font-medium text-white bg-[#4C9A2A] hover:bg-[#3d7b22] transition-colors"
             >
               Apply Filters
-            </button>
+            </Button>
           </div>
         </div>
       </div>

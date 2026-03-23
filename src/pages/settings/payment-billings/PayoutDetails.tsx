@@ -106,12 +106,12 @@ const PayoutDetails = () => {
   return (
     <HomeLayout isLoading={isLoading} showNavBar={false}>
       <div className="min-h-screen bg-white">
-        <div className="max-w-[800px] mx-auto px-6 py-8">
+        <div className="max-w-[500px] px-6 py-8">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[14px] mb-6">
+          <div className="flex items-center gap-2 text-[14px] mb-6 font-medium">
             <button
               onClick={() => navigate('/settings')}
-              className="text-[#6C6C6C] hover:text-[#344054]"
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
             >
               Settings
             </button>
@@ -120,40 +120,40 @@ const PayoutDetails = () => {
               onClick={() =>
                 navigate('/settings', { state: { tab: 'payment-billings' } })
               }
-              className="text-[#6C6C6C] hover:text-[#344054]"
+              className="text-[#6C6C6C] hover:text-[#344054] font-medium"
             >
               Payment & billings
             </button>
             <span className="text-[#6C6C6C]">/</span>
-            <span className="text-[#101828]">Payout details</span>
+            <span className="text-[#101828] font-medium">Payout details</span>
           </div>
 
           {/* Title */}
-          <h1 className="text-[32px] font-semibold text-[#101828] mb-8">
+          <h1 className="text-[23px] font-bold text-[#0A0A0A] mb-8 tracking-tight font-[lora]">
             Payout details
           </h1>
 
           {/* Bank Account Number */}
           <div className="mb-6">
-            <label className="block text-[14px] font-medium text-[#344054] mb-2">
-              Bank account number
-            </label>
             <Input
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value)}
               placeholder="1234567890"
               className="py-3 text-[16px]"
+              label="Bank account number"
             />
           </div>
 
           {/* Bank Account Name (Read-only) */}
           <div className="mb-6">
-            <label className="block text-[14px] font-medium text-[#344054] mb-2">
-              Bank account name
-            </label>
-            <div className="px-4 py-3 bg-[#F9FAFB] text-[16px] text-[#6C6C6C] rounded-lg border border-gray-200">
-              {payoutInfo?.fullName || '-'}
-            </div>
+            <Input
+              value={payoutInfo?.fullName}
+              placeholder="Enter your full name"
+              className="py-3 text-[16px]"
+              label="Bank account name"
+              readOnly
+              disabled
+            />
           </div>
 
           {/* Bank Name */}
@@ -170,7 +170,7 @@ const PayoutDetails = () => {
                 )
               }
               placeholder="Select bank"
-              className="!py-3 text-[16px]"
+              className="!py-3 text-[16px] text-[red] !cursor-pointer"
             />
           </div>
 
@@ -180,7 +180,6 @@ const PayoutDetails = () => {
             disabled={!hasChanges || isUpdating}
             variant="default"
             size="full"
-            className="py-3 rounded-lg"
             loading={isUpdating}
           >
             Save changes

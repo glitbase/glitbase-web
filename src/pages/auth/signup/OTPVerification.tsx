@@ -9,6 +9,12 @@ import {
   useResendEmailOtpMutation,
 } from '@/redux/auth';
 import { toast } from 'react-toastify';
+import { useMatchMedia } from '@/hooks/useMatchMedia';
+import {
+  AUTH,
+  authOtpFocusStyle,
+  authOtpInputStyle,
+} from '@/pages/auth/authPageStyles';
 
 const OTPVerification = () => {
   const navigate = useNavigate();
@@ -20,6 +26,7 @@ const OTPVerification = () => {
   const [timer, setTimer] = useState(30);
   const [isTimerActive, setIsTimerActive] = useState(true);
   const [isError, setIsError] = useState(false);
+  const compactOtp = useMatchMedia('(max-width: 400px)');
 
   const [verifyEmail] = useVerifyEmailMutation();
   const [resendOtp] = useResendEmailOtpMutation();
@@ -71,86 +78,61 @@ const OTPVerification = () => {
   };
 
   return (
-    <main className="h-screen w-full !bg-[white]">
-      <div className="flex justify-between py-8 px-12">
-        <GoBack text="Back" className="!text-[#60983C]" />
-        <div className="flex items-center space-x-2">
-          <p className="text-[13px] text-[#344054]">Already have an account?</p>
-          <button
-            onClick={() => navigate('/auth/login')}
-            className="text-[#CC5A88] text-[13px] font-semibold"
-          >
-            Sign in
-          </button>
-        </div>
-      </div>
+    <main className={AUTH.main}>
+      <p onClick={() => navigate('/auth/login')} className={AUTH.topLink}>
+        Already have an account? <span className={AUTH.topLinkAccent}>Sign In</span>
+      </p>
 
-      <div className="px-4 mx-auto pb-2 max-w-[470px] flex flex-col items-center mt-[30px]">
-        <div className="space-y-2 flex justify-center flex-col items-center w-full">
-          <Typography
-            variant="heading"
-            className="text-center !text-[2rem] font-medium font-[lora]"
-          >
+      <div className={AUTH.center}>
+        <div className={AUTH.column}>
+          <GoBack color="#3B3B3B" size='lg' />
+          <Typography variant="heading" className={AUTH.title}>
             Verify your email
           </Typography>
-          <Typography
-            variant="body"
-            className="text-[#344054] font-400 text-center text-[16px] mt-2"
-          >
+          <p className={AUTH.subtitle}>
             We sent a 6-digit code to{' '}
-            <span className="font-semibold text-[#344054]">{email}</span>.
+            <span className="font-semibold text-[#344054] break-all">{email}</span>.
             Please enter it below to continue
-          </Typography>
+          </p>
+
+          <form className="py-6 md:py-8 w-full">
+            <div className="mb-3 w-full overflow-x-auto flex justify-center pb-1 -mx-1 px-1">
+              <OtpInput
+                value={otp}
+                onChange={handleChange}
+                numInputs={6}
+                isInputNum={true}
+                hasErrored={isError}
+                shouldAutoFocus
+                inputStyle={authOtpInputStyle({
+                  hasError: isError,
+                  compact: compactOtp,
+                })}
+                focusStyle={authOtpFocusStyle(isError)}
+                isInputSecure={false}
+              />
+            </div>
+
+            <div>
+              <span className="text-[#B8B8B8] text-sm font-semibold">
+                {isTimerActive ? (
+                  <>Resend code in 00:{timer < 10 ? `0${timer}` : timer}</>
+                ) : (
+                  <>
+                    Didn't receive code?{' '}
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      className="text-[#CC5A88] font-semibold cursor-pointer hover:underline"
+                    >
+                      Resend code
+                    </button>
+                  </>
+                )}
+              </span>
+            </div>
+          </form>
         </div>
-
-        <form className="py-10 w-full">
-          <div className="mb-6 flex justify-center">
-            <OtpInput
-              value={otp}
-              onChange={handleChange}
-              numInputs={6}
-              isInputNum={true}
-              hasErrored={isError}
-              shouldAutoFocus
-              inputStyle={{
-                width: '54px',
-                height: '54px',
-                marginLeft: '4px',
-                marginRight: '4px',
-                color: '#1c1a3a',
-                fontSize: '24px',
-                fontWeight: 600,
-                background: '#F5F5F5',
-                borderRadius: '8px',
-                border: isError ? '1px solid #FF2F2F' : '1px solid transparent',
-              }}
-              focusStyle={{
-                outline: 'none',
-                border: isError ? '1px solid #FF2F2F' : '1px solid #CC5A88',
-              }}
-              isInputSecure={false}
-            />
-          </div>
-
-          <div className="text-center">
-            <span className="text-[#98A2B3] text-sm">
-              {isTimerActive ? (
-                <>Resend code in 00:{timer < 10 ? `0${timer}` : timer}</>
-              ) : (
-                <>
-                  Didn't receive code?{' '}
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    className="text-[#CC5A88] font-semibold cursor-pointer hover:underline"
-                  >
-                    Resend code
-                  </button>
-                </>
-              )}
-            </span>
-          </div>
-        </form>
       </div>
     </main>
   );

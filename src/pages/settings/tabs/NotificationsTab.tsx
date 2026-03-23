@@ -233,7 +233,7 @@ const NotificationsTab = () => {
       {sections.map((section, sectionIndex) => (
         <div key={sectionIndex} className="mb-8">
           {/* Section Title */}
-          <h3 className="text-[14px] font-normal text-[#6C6C6C] mb-4">
+          <h3 className="text-[13px] md:text-[15px] font-medium text-[#6C6C6C] mb-4">
             {section.title}
           </h3>
 
@@ -242,15 +242,15 @@ const NotificationsTab = () => {
             {section.items.map((item) => (
               <div
                 key={item.key}
-                className={`bg-[#F9FAFB] p-4 flex items-start justify-between ${
+                className={`bg-[#F9FAFB] p-4 flex items-center justify-between ${
                   item.disabled ? 'opacity-50' : ''
                 }`}
               >
                 <div className="flex-1 pr-4">
-                  <h4 className="text-[16px] font-semibold text-[#101828] mb-1">
+                  <h4 className="text-[13px] md:text-[14px] font-semibold text-[#101828] mb-1">
                     {item.title}
                   </h4>
-                  <p className="text-[14px] text-[#6C6C6C]">
+                  <p className="text-[13px] md:text-[14px] text-[#6C6C6C] font-medium max-w-[300px]">
                     {item.description}
                   </p>
                 </div>
@@ -262,7 +262,7 @@ const NotificationsTab = () => {
                       !item.disabled && handleToggle(item.key, item.enabled)
                     }
                     disabled={item.disabled || isLoading}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${
                       item.enabled && !item.disabled
                         ? 'bg-[#FF71AA]'
                         : 'bg-[#D0D5DD]'
@@ -271,7 +271,7 @@ const NotificationsTab = () => {
                     }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
                         item.enabled && !item.disabled
                           ? 'translate-x-6'
                           : 'translate-x-1'

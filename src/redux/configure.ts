@@ -9,12 +9,31 @@ let hasHandledSessionError = false;
 const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_URL,
   timeout: 180000,
-  prepareHeaders: (headers) => {
-    const tokensString = localStorage.getItem('tokens');
-    const tokens: Tokens = tokensString ? JSON.parse(tokensString) : null;
+  prepareHeaders: (headers, { endpoint }) => {
+    // Don't add auth headers for public endpoints
+    const publicEndpoints = [
+      'resetPassword',
+      'forgotPassword',
+      'validateOtp',
+      'resendPasswordResetToken',
+      'login',
+      'registerAgent',
+      'initiateSignup',
+      'verifyEmail',
+      'resendEmailOtp',
+      'googleAuth',
+    ];
+    
+    // Check if this is a public endpoint
+    const isPublicEndpoint = endpoint && publicEndpoints.includes(endpoint as string);
+    
+    if (!isPublicEndpoint) {
+      const tokensString = localStorage.getItem('tokens');
+      const tokens: Tokens = tokensString ? JSON.parse(tokensString) : null;
 
-    if (tokens && tokens.accessToken) {
-      headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+      if (tokens && tokens.accessToken) {
+        headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+      }
     }
     return headers;
   },
@@ -54,7 +73,38 @@ export const baseQueryWithReauth = async (
 ) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
+  // Don't attempt token refresh for public endpoints (they shouldn't require auth)
+  // Get endpoint name from api or check URL
+  const endpoint = api?.endpoint || '';
+  const url = args?.url || '';
+  const publicEndpoints = [
+    'resetPassword',
+    'forgotPassword',
+    'validateOtp',
+    'resendPasswordResetToken',
+    'login',
+    'registerAgent',
+    'initiateSignup',
+    'verifyEmail',
+    'resendEmailOtp',
+    'googleAuth',
+  ];
+  const publicPaths = [
+    '/api/v1/auth/reset-password',
+    '/api/v1/auth/forgot-password',
+    '/api/v1/auth/validate-otp',
+    '/api/v1/auth/resend-password-reset-otp',
+    '/api/v1/auth/login',
+    '/api/v1/auth/sign-up',
+    '/api/v1/auth/initiate-signup',
+    '/api/v1/auth/verify-email',
+    '/api/v1/auth/resend-email-verification-token',
+    '/api/v1/auth/google',
+  ];
+  
+  const isPublicEndpoint = publicEndpoints.includes(endpoint) || publicPaths.some(path => url.includes(path));
+
+  if (result.error && result.error.status === 401 && !isPublicEndpoint) {
     const tokensString = localStorage.getItem('tokens');
     const tokens: Tokens = tokensString ? JSON.parse(tokensString) : null;
     console.log(tokens);

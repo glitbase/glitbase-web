@@ -7,6 +7,8 @@ import {
 } from '@/redux/vendor';
 import { useFileUploadMutation } from '@/redux/app';
 import { toast } from 'react-toastify';
+import { X } from 'lucide-react';
+import { Button } from '@/components/Buttons';
 
 interface GalleryProps {
   store: Store;
@@ -128,12 +130,12 @@ const Gallery = ({ store, isReadOnly = false }: GalleryProps) => {
               </svg>
             </div>
           )}
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {isReadOnly ? 'No images available' : 'No images in gallery yet'}
+          <h3 className="text-[20px] font-bold text-[#0A0A0A] mb-2 font-[lora] tracking-tight">
+            {isReadOnly ? 'Behind the scenes' : 'No images in gallery yet'}
           </h3>
-          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+          <p className="text-[#6C6C6C] mb-6 max-w-[300px] mx-auto text-[14px] font-medium">
             {isReadOnly
-              ? 'This store has not added any gallery images yet'
+              ? 'Real photos and store glimpses loading soon'
               : 'Showcase your work by adding images to your gallery'}
           </p>
         </div>
@@ -157,7 +159,7 @@ const Gallery = ({ store, isReadOnly = false }: GalleryProps) => {
                     e.stopPropagation();
                     setImageToDelete(image.id);
                   }}
-                  className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-full flex items-center justify-center transition-all"
+                  className="absolute top-2 right-2 w-6 h-6 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-lg flex items-center justify-center transition-all"
                   title="Delete image"
                 >
                   <svg
@@ -297,49 +299,33 @@ const Gallery = ({ store, isReadOnly = false }: GalleryProps) => {
       {/* Delete Confirmation Modal */}
       {imageToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-8">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-3xl font-bold text-gray-900">
+              <h3 className="text-xl font-bold text-[#0A0A0A] font-[lora] tracking-tight">
                 Remove image?
               </h3>
               <button
                 onClick={() => setImageToDelete(null)}
-                className="text-gray-400 hover:text-gray-600 w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full"
+                className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full"
                 disabled={isDeleting}
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <X color='#3B3B3B' size={20} />
               </button>
             </div>
-            <p className="text-gray-600 text-lg mb-8">
-              This will permanently delete the image from your gallery
+            <p className="text-[#6C6C6C] text-[14px] font-medium mb-8">
+            This will permanently delete the image from your gallery
             </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setImageToDelete(null)}
-                className="flex-1 px-6 py-4 text-gray-900 bg-gray-200 rounded-full font-semibold hover:bg-gray-300 transition-colors text-lg"
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteImage}
-                className="flex-1 px-6 py-4 bg-red-600 text-white rounded-full font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors text-lg"
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Removing...' : 'Remove image'}
-              </button>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Button variant="cancel" size="full" onClick={() => setImageToDelete(null)} disabled={isDeleting}>
+                  Cancel
+                </Button>
+              </div>
+              <div className="flex-1">
+                <Button variant="destructive" size="full" onClick={handleDeleteImage} loading={isDeleting}>
+                  Remove image
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,8 +1,8 @@
 const ProviderCardSkeleton = () => {
   return (
-    <div className="flex-shrink-0 w-[156px]">
+    <div className="snap-start shrink-0 w-[158px] sm:w-[168px] md:w-[180px]">
       <div className="relative">
-        <div className="w-full h-[156px] skeleton-shimmer rounded-lg" />
+        <div className="w-full h-[132px] sm:h-[144px] md:h-[156px] skeleton-shimmer rounded-lg" />
       </div>
       <div className="mt-2 space-y-2">
         <div className="h-4 skeleton-shimmer rounded w-3/4" />
