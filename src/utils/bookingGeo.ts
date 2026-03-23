@@ -21,51 +21,6 @@ export function haversineDistanceMeters(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/**
- * Extract { lat, lng } from common API shapes (flat fields, GeoJSON Point, etc.).
- */
-export function extractLatLngFromLocation(loc: unknown): { lat: number; lng: number } | null {
-  if (loc == null || typeof loc !== "object") return null;
-  const o = loc as Record<string, unknown>;
-
-  const lat = o.lat ?? o.latitude;
-  const lng = o.lng ?? o.longitude ?? o.lon;
-  if (typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng)) {
-    return { lat, lng };
-  }
-  if (typeof lat === "string" && typeof lng === "string") {
-    const la = parseFloat(lat);
-    const ln = parseFloat(lng);
-    if (Number.isFinite(la) && Number.isFinite(ln)) return { lat: la, lng: ln };
-  }
-
-  const coords = o.coordinates;
-  if (Array.isArray(coords) && coords.length >= 2) {
-    const a = Number(coords[0]);
-    const b = Number(coords[1]);
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-    // GeoJSON Point: [longitude, latitude]
-    if (Math.abs(a) <= 180 && Math.abs(b) <= 90) {
-      return { lng: a, lat: b };
-    }
-  }
-
-  const geometry = o.geometry;
-  if (geometry && typeof geometry === "object") {
-    const g = geometry as Record<string, unknown>;
-    const gc = g.coordinates;
-    if (Array.isArray(gc) && gc.length >= 2) {
-      const a = Number(gc[0]);
-      const b = Number(gc[1]);
-      if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) <= 180 && Math.abs(b) <= 90) {
-        return { lng: a, lat: b };
-      }
-    }
-  }
-
-  return null;
-}
-
 export function isServiceDateToday(serviceDate: string | undefined): boolean {
   if (!serviceDate) return false;
   const d = serviceDate.split("T")[0];
@@ -85,4 +40,27 @@ export function getCurrentPosition(): Promise<GeolocationPosition> {
       maximumAge: 0,
     });
   });
+}
+
+/**
+ * User-facing copy for browser GeolocationPositionError (codes 1–3).
+ * Code 2 ("Position update is unavailable") = OS/GPS could not produce a fix — not a permissions UI issue.
+ */
+export function geolocationFailureMessage(err: unknown): string {
+  if (typeof err === "object" && err !== null && "code" in err) {
+    const code = (err as GeolocationPositionError).code;
+    if (code === 1) {
+      return "Location permission is needed to verify you're at the store.";
+    }
+    if (code === 2) {
+      return "Your device couldn't get a location fix (GPS/signal or system Location off). Try again near a window, enable Location for this browser in system settings, or disable VPN.";
+    }
+    if (code === 3) {
+      return "Location request timed out. Please try again.";
+    }
+  }
+  if (err instanceof Error && err.message === "Geolocation is not supported") {
+    return "This browser doesn't support location.";
+  }
+  return "Could not read your location.";
 }

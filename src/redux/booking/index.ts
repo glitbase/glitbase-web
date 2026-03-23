@@ -3,6 +3,16 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '../configure';
 
 // ---- Shared Types ----
+/** Store location on booking payloads — GeoJSON Point is [longitude, latitude]. */
+export interface BookingStoreLocation {
+  geoPoint?: { type?: string; coordinates?: [number, number] };
+  name?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipcode?: string;
+}
+
 export interface Booking {
   _id: string;
   bookingReference: string;
@@ -11,7 +21,7 @@ export interface Booking {
     id: string;
     name: string;
     bannerImageUrl?: string;
-    location?: unknown;
+    location?: BookingStoreLocation;
   };
   serviceType: 'normal' | 'home' | 'pickDrop';
   serviceDate: string;
@@ -182,52 +192,6 @@ export const bookingApi = createApi({
       transformResponse: (response: any) => response.data,
       invalidatesTags: ['Booking'],
     }),
-    getUserBookings: builder.query({
-      query: ({
-        page = 1,
-        limit = 10,
-        status = 'all',
-      }: {
-        page?: number;
-        limit?: number;
-        status?: 'all' | 'pending' | 'ongoing' | 'completed' | 'rejected';
-      }) => {
-        const params = new URLSearchParams({
-          page: String(page),
-          limit: String(limit),
-        });
-        if (status && status !== 'all') params.append('status', status);
-
-        return {
-          url: `/api/v1/bookings?${params.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: (response: any) => response.data,
-      providesTags: ['Bookings'],
-    }),
-    getBookingByReference: builder.query({
-      query: (reference: string) => ({
-        url: `/api/v1/bookings/${reference}`,
-        method: 'GET',
-      }),
-      transformResponse: (response: any) => response.data,
-      providesTags: (_result, _error, reference) => [
-        { type: 'Booking' as const, id: reference },
-      ],
-    }),
-    cancelBooking: builder.mutation({
-      query: ({ bookingId, reason }: { bookingId: string; reason: string }) => ({
-        url: `/api/v1/bookings/${bookingId}/cancel`,
-        method: 'POST',
-        body: { reason },
-      }),
-      transformResponse: (response: any) => response.data,
-      invalidatesTags: (_result, _error, arg) => [
-        'Bookings',
-        { type: 'Booking' as const, id: arg.bookingId },
-      ],
-    }),
     getPaymentCards: builder.query({
       query: () => ({
         url: '/api/v1/payment-cards',
@@ -359,9 +323,6 @@ export const bookingApi = createApi({
 export const {
   useCalculatePricingMutation,
   useCreateBookingMutation,
-  useGetUserBookingsQuery,
-  useGetBookingByReferenceQuery,
-  useCancelBookingMutation,
   useGetPaymentCardsQuery,
   useInitiatePaymentMutation,
   useCompletePaymentMutation,

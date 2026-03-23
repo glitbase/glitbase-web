@@ -102,7 +102,7 @@ const Settings = () => {
   return (
     <HomeLayout isLoading={false} showNavBar={true} showSearch={false}>
       <div className="min-h-[100dvh] min-h-screen bg-white w-full min-w-0 -mt-12 md:-mt-0">
-        <div className="w-full max-w-[960px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-5 sm:py-6 md:py-8 pb-8 sm:pb-10 min-w-0">
+        <div className="w-full max-w-[960px] px-3 sm:px-4 md:px-6 lg:px-8 py-5 sm:py-6 md:py-8 pb-8 sm:pb-10 min-w-0">
           {/* Header */}
           <p className="text-[1.1rem] sm:text-[1.5rem] md:text-2xl tracking-tight font-semibold text-[#1D2739] font-[lora] mb-4 sm:mb-6 md:mb-8">
             Settings

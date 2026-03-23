@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { X, MapPin, CheckCircle2, Circle, CalendarDays, ChevronDown } from "lucide-react";
@@ -12,9 +12,9 @@ import {
 } from "@/redux/booking";
 import {
   STORE_CHECKIN_RADIUS_METERS,
-  extractLatLngFromLocation,
   haversineDistanceMeters,
   getCurrentPosition,
+  geolocationFailureMessage,
   isServiceDateToday,
 } from "@/utils/bookingGeo";
 import {
@@ -152,17 +152,87 @@ const DetailPanel = ({
   const [geoWorking, setGeoWorking] = useState(false);
   const booking = data?.data?.booking;
 
-  const storeCoords = booking ? extractLatLngFromLocation(booking.store?.location) : null;
-  const customerCheckInEligible =
+  // GeoJSON Point on API: coordinates = [longitude, latitude]
+  const coords = booking?.store?.location?.geoPoint?.coordinates;
+  const storeCoords = useMemo(() => {
+    if (!coords || coords.length < 2) return null;
+    return { lng: Number(coords[0]), lat: Number(coords[1]) };
+  }, [coords]);
+  const hasValidStoreCoords =
+    storeCoords !== null &&
+    Number.isFinite(storeCoords.lat) &&
+    Number.isFinite(storeCoords.lng);
+  const customerArrivalSectionVisible =
     !!booking &&
-    !["completed", "cancelled", "rejected", "refunded", "pending"].includes(booking.status) &&
-    isServiceDateToday(booking.serviceDate);
+    !["completed", "cancelled", "rejected", "refunded", "pending"].includes(booking.status);
+  const isCheckInDay = !!booking && isServiceDateToday(booking.serviceDate);
+
+  /** Live distance to store for gating the button (100m = enabled). */
+  type Proximity =
+    | { status: "idle" }
+    | { status: "pending" }
+    | { status: "in_range"; meters: number }
+    | { status: "out_of_range"; meters: number }
+    | { status: "blocked"; message: string };
+  const [proximity, setProximity] = useState<Proximity>({ status: "idle" });
+
+  useEffect(() => {
+    if (!booking || !isCheckInDay || !hasValidStoreCoords || !storeCoords || booking.customerPresent) {
+      setProximity({ status: "idle" });
+      return;
+    }
+
+    setProximity({ status: "pending" });
+
+    if (!navigator.geolocation) {
+      setProximity({ status: "blocked", message: "This browser can't use location for check-in." });
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const meters = haversineDistanceMeters(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          storeCoords.lat,
+          storeCoords.lng
+        );
+        if (meters <= STORE_CHECKIN_RADIUS_METERS) {
+          setProximity({ status: "in_range", meters });
+        } else {
+          setProximity({ status: "out_of_range", meters });
+        }
+      },
+      (err) => {
+        setProximity({ status: "blocked", message: geolocationFailureMessage(err) });
+      },
+      { enableHighAccuracy: true, maximumAge: 8000, timeout: 25000 }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [booking, isCheckInDay, hasValidStoreCoords, storeCoords]);
+
+  /** Only enabled when device reports you're within STORE_CHECKIN_RADIUS_METERS of the store. */
+  const canClickImHere =
+    !!booking &&
+    isCheckInDay &&
+    hasValidStoreCoords &&
+    !booking.customerPresent &&
+    proximity.status === "in_range";
 
   const handleImHere = async () => {
-    if (!booking || !storeCoords) return;
+    if (!booking || !hasValidStoreCoords || !storeCoords || !canClickImHere) return;
     setGeoWorking(true);
     try {
-      const pos = await getCurrentPosition();
+      let pos: GeolocationPosition;
+      try {
+        pos = await getCurrentPosition();
+      } catch (geoErr) {
+        toast.error(geolocationFailureMessage(geoErr));
+        return;
+      }
       const d = haversineDistanceMeters(
         pos.coords.latitude,
         pos.coords.longitude,
@@ -171,7 +241,7 @@ const DetailPanel = ({
       );
       if (d > STORE_CHECKIN_RADIUS_METERS) {
         toast.error(
-          `Check-in only works within ${STORE_CHECKIN_RADIUS_METERS}m of the store. You appear to be about ${Math.round(d)}m away.`
+          `You're no longer within ${STORE_CHECKIN_RADIUS_METERS}m of the store (about ${Math.round(d)}m away). Move closer and try again.`
         );
         return;
       }
@@ -181,12 +251,8 @@ const DetailPanel = ({
       }).unwrap();
       toast.success("You're checked in at the store");
     } catch (e: unknown) {
-      const err = e as { data?: { message?: string }; code?: number; message?: string };
-      if (err?.code === 1) {
-        toast.error("Location permission is needed to verify you're at the store.");
-      } else {
-        toast.error(err?.data?.message ?? err?.message ?? "Could not check in");
-      }
+      const err = e as { data?: { message?: string }; message?: string };
+      toast.error(err?.data?.message ?? err?.message ?? "Could not check in");
     } finally {
       setGeoWorking(false);
     }
@@ -314,8 +380,8 @@ const DetailPanel = ({
               })}
             </div>
 
-            {/* Day-of: "I'm here" — API only called when within 100m of store */}
-            {customerCheckInEligible && (
+            {/* "I'm here" — enabled only when live location is within STORE_CHECKIN_RADIUS_METERS of store. */}
+            {customerArrivalSectionVisible && (
               <div className="px-4 sm:px-6 py-4 border-t border-[#F0F0F0]">
                 <p className="text-[13px] font-medium text-[#101828] mb-2">At the store?</p>
                 {booking.customerPresent ? (
@@ -335,25 +401,54 @@ const DetailPanel = ({
                       Undo check-in
                     </Button>
                   </div>
-                ) : storeCoords ? (
+                ) : (
                   <>
                     <p className="text-[11px] sm:text-[12px] text-[#6C6C6C] font-medium mb-3 leading-snug">
-                      Tap when you arrive. We&apos;ll confirm you&apos;re within {STORE_CHECKIN_RADIUS_METERS}m of the store (location required).
+                      {!isCheckInDay &&
+                        "Check-in unlocks on the day of your appointment."}
+                      {isCheckInDay &&
+                        !hasValidStoreCoords &&
+                        "This store doesn't have map check-in set up yet — you can still attend as normal."}
+                      {isCheckInDay &&
+                        hasValidStoreCoords &&
+                        proximity.status === "pending" &&
+                        `Finding your location… The "I'm here" button turns on when you're within ${STORE_CHECKIN_RADIUS_METERS}m of the store.`}
+                      {isCheckInDay &&
+                        hasValidStoreCoords &&
+                        proximity.status === "out_of_range" &&
+                        `You're about ${Math.round(proximity.meters)}m from the store — move within ${STORE_CHECKIN_RADIUS_METERS}m to check in.`}
+                      {isCheckInDay &&
+                        hasValidStoreCoords &&
+                        proximity.status === "blocked" &&
+                        proximity.message}
+                      {isCheckInDay &&
+                        hasValidStoreCoords &&
+                        proximity.status === "in_range" &&
+                        `You're within ${STORE_CHECKIN_RADIUS_METERS}m — tap to check in (we'll verify once more).`}
                     </p>
                     <Button
                       type="button"
                       className="w-full sm:w-auto min-h-[44px]"
-                      disabled={geoWorking || isUpdatingPresence}
+                      disabled={!canClickImHere || geoWorking || isUpdatingPresence}
                       loading={geoWorking || isUpdatingPresence}
                       onClick={handleImHere}
+                      title={
+                        !isCheckInDay
+                          ? "Available on your appointment day"
+                          : !hasValidStoreCoords
+                            ? "Store location required for check-in"
+                            : proximity.status === "pending"
+                              ? `Waiting for location — button enables within ${STORE_CHECKIN_RADIUS_METERS}m`
+                              : proximity.status === "out_of_range"
+                                ? `Move within ${STORE_CHECKIN_RADIUS_METERS}m of the store`
+                                : proximity.status === "blocked"
+                                  ? proximity.message
+                                  : undefined
+                      }
                     >
                       I&apos;m here
                     </Button>
                   </>
-                ) : (
-                  <p className="text-[11px] sm:text-[12px] text-[#9CA3AF] font-medium leading-snug">
-                    Map check-in isn&apos;t available until this store has coordinates on file. You can still attend your appointment as normal.
-                  </p>
                 )}
               </div>
             )}
