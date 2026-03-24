@@ -9,7 +9,7 @@ const Bookings = () => {
   return (
     <HomeLayout isLoading={false} showNavBar={true} showSearch={false}>
     <div className="min-h-[100dvh] min-h-screen bg-white flex flex-col">
-      <div className={`px-3 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4 shrink-0 ${!isVendor ? '-mt-12' : ''}`}>
+      <div className={`px-3 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4 shrink-0 ${!isVendor ? '-mt-6' : ''}`}>
         <h1 className="text-[1.1rem] sm:text-xl md:text-[22px] font-semibold text-[#0A0A0A] font-[lora] tracking-tight">
           Bookings
         </h1>
@@ -20,7 +20,7 @@ const Bookings = () => {
           <VendorBookings />
         </div>
       ) : (
-        <div className="flex-1 min-h-0 flex flex-col px-0 sm:px-2 md:px-4 lg:px-8 pb-4 md:pb-8">
+        <div className="flex-1 min-h-0 flex flex-col px-0 sm:px-2 md:px-4 pb-4 md:pb-8">
           <CustomerBookings />
         </div>
       )}

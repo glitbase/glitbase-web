@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
@@ -9,9 +9,11 @@ import { Button } from '@/components/Buttons';
 import {
   useGetMyStoreQuery,
   useGetServicesQuery,
+  useLazyGetServicesQuery,
   useDeleteServiceMutation,
   useToggleServiceSuspensionMutation,
 } from '@/redux/vendor';
+import { getServiceCategoryLabel } from '@/utils/serviceCategoryLabel';
 import VendorServicesFiltersModal, {
   VendorServicesFilterRequest,
 } from '@/components/Modal/VendorServicesFiltersModal';
@@ -30,6 +32,9 @@ const formatDuration = (minutes: number) => {
 
 const formatPrice = (price: number, currency: string) =>
   `${currencySymbol(currency)}${price.toLocaleString()}`;
+
+/** How many services to scan when building category chips. */
+const CATEGORY_SOURCE_LIMIT = 500;
 
 const Services = () => {
   const navigate = useNavigate();
@@ -79,6 +84,27 @@ const Services = () => {
     },
     { skip: !storeId }
   );
+
+  /**
+   * Separate lazy fetch so cache never collides with the paginated list query.
+   * `isSuspended` matches the current tab so chips only reflect services you’re viewing.
+   */
+  const [fetchServicesForCategoryChips, categorySourceState] = useLazyGetServicesQuery();
+  const suspendedForCategoryScan = getIsSuspendedFilter();
+
+  useEffect(() => {
+    if (!storeId) return;
+    void fetchServicesForCategoryChips({
+      storeId,
+      page: 1,
+      limit: CATEGORY_SOURCE_LIMIT,
+      category: undefined,
+      searchTerm: undefined,
+      durationInMinutes: undefined,
+      maxPrice: undefined,
+      isSuspended: suspendedForCategoryScan,
+    });
+  }, [storeId, suspendedForCategoryScan, fetchServicesForCategoryChips]);
 
   const [deleteService, { isLoading: isDeleting }] = useDeleteServiceMutation();
   const [toggleSuspension, { isLoading: isToggling }] = useToggleServiceSuspensionMutation();
@@ -147,10 +173,43 @@ const Services = () => {
     { title: 'Archived', type: 'archived' as const },
   ];
 
-  const categories = store?.preferredCategories ?? storeData?.store?.preferredCategories ?? [];
-  const allCategories = ['', ...categories];
-  const services = data?.services ?? [];
+  // Unique categories from services in the current tab scope. '' = All for API + local filter.
+  const allCategories = useMemo(() => {
+    const list = categorySourceState.data?.services ?? [];
+    const unique = new Set<string>();
+    for (const s of list) {
+      const label = getServiceCategoryLabel(s);
+      if (label) unique.add(label);
+    }
+    return ['', ...[...unique].sort((a, b) => a.localeCompare(b))];
+  }, [categorySourceState.data?.services]);
+
+  const services = useMemo(() => data?.services ?? [], [data?.services]);
   const meta = data?.meta;
+
+  /** Ensures list matches chip even if API ignores `category` query param. */
+  const displayedServices = useMemo(() => {
+    if (!selectedCategory) return services;
+    return services.filter(
+      (s: any) => getServiceCategoryLabel(s) === selectedCategory
+    );
+  }, [services, selectedCategory]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, activeTab]);
+
+  useEffect(() => {
+    const list = categorySourceState.data?.services ?? [];
+    const labels = new Set(
+      list
+        .map((s: any) => getServiceCategoryLabel(s))
+        .filter((label: string | null): label is string => label != null && label.length > 0)
+    );
+    if (selectedCategory && !labels.has(selectedCategory)) {
+      setSelectedCategory('');
+    }
+  }, [categorySourceState.data?.services, selectedCategory]);
 
   if (!storeId) {
     return (
@@ -265,24 +324,32 @@ const Services = () => {
                 </div>
               ))}
             </div>
-          ) : services.length === 0 ? (
+          ) : displayedServices.length === 0 ? (
             <div className="text-center py-16">
               <h3 className="text-[20px] font-bold text-[#101828] font-[lora] mb-2">
-                No services found
+                {services.length > 0 && selectedCategory
+                  ? 'No services in this category'
+                  : 'No services found'}
               </h3>
               <p className="text-[14px] font-medium text-[#6C6C6C] max-w-[70%] mx-auto mb-6">
-                {searchQuery
-                  ? 'Try adjusting your search terms'
-                  : 'Create your first service to get started'}
+                {services.length > 0 && selectedCategory
+                  ? 'Try another category or show all services.'
+                  : searchQuery
+                    ? 'Try adjusting your search terms'
+                    : 'Create your first service to get started'}
               </p>
-              {!searchQuery && (
-                <Button onClick={handleAddService}>Add service</Button>
+              {services.length > 0 && selectedCategory ? (
+                <Button type="button" variant="outline" onClick={() => setSelectedCategory('')}>
+                  Show all
+                </Button>
+              ) : (
+                !searchQuery && <Button onClick={handleAddService}>Add service</Button>
               )}
             </div>
           ) : (
             <>
               <div className="space-y-4">
-                {services.map((service: any) => (
+                {displayedServices.map((service: any) => (
                   <div key={service.id} className="bg-white rounded-xl py-4">
                     <div className="flex gap-4">
                       <div className="w-20 h-20 flex-shrink-0">
@@ -321,10 +388,12 @@ const Services = () => {
                               <span className="text-[#6C6C6C] font-medium">
                                 {formatDuration(service.durationInMinutes)}
                               </span>
-                              {service.category && (
+                              {getServiceCategoryLabel(service) && (
                                 <>
                                   <span className="text-[#6C6C6C]"> . </span>
-                                  <span className="text-[#6C6C6C] font-medium">{service.category}</span>
+                                  <span className="text-[#6C6C6C] font-medium">
+                                    {getServiceCategoryLabel(service)}
+                                  </span>
                                 </>
                               )}
                             </div>

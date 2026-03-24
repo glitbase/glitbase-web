@@ -63,7 +63,7 @@ const LocationSetup = () => {
             address: selectedLocation!.address,
             city: selectedLocation!.city,
             state: selectedLocation!.state,
-            zipcode: selectedLocation!.zipcode,
+            zipcode: selectedLocation!.zipcode || '111111',
             coordinates: {
               latitude: selectedLocation!.coordinates.latitude,
               longitude: selectedLocation!.coordinates.longitude,
@@ -105,10 +105,10 @@ const LocationSetup = () => {
               variant="heading"
               className="text-left !text-[1.7rem] font-bold font-[lora] text-[#0A0A0A]"
             >
-              Boost your visibility
+              Where is your store located?
             </Typography>
             <p className="text-left font-medium text-[1rem] text-[#6C6C6C] !mt-2">
-              Add up to 5 keywords for Glitfinder and Glitmatch tags so customers can discover your business easily
+            Add your store address so nearby customers can discover your busines
             </p>
           </div>
 

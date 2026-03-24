@@ -48,12 +48,25 @@ const formatAddOnDuration = (duration: { hours: number; minutes: number }) => {
   return `${duration.hours}h ${duration.minutes}m`;
 };
 
+/** API rejects extra keys on duration (e.g. Mongo `_id`). Only send hours + minutes. */
+const sanitizeAddOnDuration = (duration: unknown): { hours: number; minutes: number } => {
+  if (!duration || typeof duration !== 'object') {
+    return { hours: 0, minutes: 0 };
+  }
+  const d = duration as { hours?: unknown; minutes?: unknown };
+  const hours = typeof d.hours === 'number' && Number.isFinite(d.hours) ? d.hours : 0;
+  const minutes = typeof d.minutes === 'number' && Number.isFinite(d.minutes) ? d.minutes : 0;
+  return { hours, minutes };
+};
+
 /** Normalise an addon from the API — server may return durationInMinutes instead of { hours, minutes } */
 const normaliseAddOn = (addOn: any): AddOn => {
-  let duration = addOn.duration;
-  if (!duration || typeof duration !== 'object') {
+  let duration: { hours: number; minutes: number };
+  if (!addOn.duration || typeof addOn.duration !== 'object') {
     const total = addOn.durationInMinutes || 0;
     duration = { hours: Math.floor(total / 60), minutes: total % 60 };
+  } else {
+    duration = sanitizeAddOnDuration(addOn.duration);
   }
   return { ...addOn, duration };
 };
@@ -184,14 +197,18 @@ const AddService = () => {
     if (!currentAddOn.name.trim()) { toast.error('Add-on name is required'); return; }
 
     // Always update local state first so the UI is responsive
+    const addOnForState: AddOn = {
+      ...currentAddOn,
+      duration: sanitizeAddOnDuration(currentAddOn.duration),
+    };
     if (editingAddOnIndex !== null) {
       setAddOns((prev) => {
         const updated = [...prev];
-        updated[editingAddOnIndex] = { ...currentAddOn };
+        updated[editingAddOnIndex] = addOnForState;
         return updated;
       });
     } else {
-      setAddOns((prev) => [...prev, { ...currentAddOn }]);
+      setAddOns((prev) => [...prev, addOnForState]);
     }
 
     resetAddOnForm();
@@ -211,7 +228,7 @@ const AddService = () => {
                 name: currentAddOn.name,
                 description: currentAddOn.description,
                 price: currentAddOn.price,
-                duration: currentAddOn.duration,
+                duration: sanitizeAddOnDuration(currentAddOn.duration),
               },
             }).unwrap();
           }
@@ -222,7 +239,7 @@ const AddService = () => {
               name: currentAddOn.name,
               description: currentAddOn.description,
               price: currentAddOn.price,
-              duration: currentAddOn.duration,
+              duration: sanitizeAddOnDuration(currentAddOn.duration),
             },
           }).unwrap();
         }
@@ -296,7 +313,18 @@ const AddService = () => {
           storeId: store?.id || '',
           ...basePayload,
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          addOns: addOns.length > 0 ? addOns.map(({ id: _aid, _id: __aid, ...rest }) => rest) : undefined,
+          addOns:
+            addOns.length > 0
+              ? addOns.map((a) => {
+                  const payload = {
+                    name: a.name,
+                    description: a.description,
+                    price: a.price,
+                    duration: sanitizeAddOnDuration(a.duration),
+                  };
+                  return payload;
+                })
+              : undefined,
         }).unwrap();
         toast.success('New service created and published');
       }
@@ -671,7 +699,10 @@ const AddService = () => {
                       value={currentAddOn.duration.hours === 0 ? '' : currentAddOn.duration.hours.toString()}
                       onChange={(e) => {
                         const v = parseInt(e.target.value) || 0;
-                        setCurrentAddOn((prev) => ({ ...prev, duration: { ...prev.duration, hours: v } }));
+                        setCurrentAddOn((prev) => ({
+                          ...prev,
+                          duration: { ...sanitizeAddOnDuration(prev.duration), hours: v },
+                        }));
                       }}
                       min={0}
                       placeholder="0"
@@ -685,7 +716,10 @@ const AddService = () => {
                       onChange={(e) => {
                         const v = parseInt(e.target.value) || 0;
                         if (v > 59) return;
-                        setCurrentAddOn((prev) => ({ ...prev, duration: { ...prev.duration, minutes: v } }));
+                        setCurrentAddOn((prev) => ({
+                          ...prev,
+                          duration: { ...sanitizeAddOnDuration(prev.duration), minutes: v },
+                        }));
                       }}
                       min={0}
                       max={59}

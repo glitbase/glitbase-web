@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { removeFromCart } from '@/redux/cart/cartSlice';
-import { useGetServicesQuery, useDeleteServiceMutation } from '@/redux/vendor';
+import { useGetServicesQuery, useLazyGetServicesQuery, useDeleteServiceMutation } from '@/redux/vendor';
+import { getServiceCategoryLabel } from '@/utils/serviceCategoryLabel';
 import { toast } from 'react-toastify';
 import ServiceDetailsDrawer from './ServiceDetailsDrawer';
 import BookingSummaryCard from './BookingSummaryCard';
@@ -96,6 +97,17 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
     category,
   });
 
+  const [fetchServicesForCategoryChips, categoryChipsState] = useLazyGetServicesQuery();
+
+  useEffect(() => {
+    void fetchServicesForCategoryChips({
+      storeId,
+      page: 1,
+      limit: 500,
+      category: undefined,
+    });
+  }, [storeId, fetchServicesForCategoryChips]);
+
   const [deleteService, { isLoading: isDeleting }] = useDeleteServiceMutation();
 
   const handleAddService = () => {
@@ -147,6 +159,24 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
     setSelectedService(service);
   };
 
+  const services = useMemo(() => data?.services ?? [], [data?.services]);
+  const meta = data?.meta;
+
+  const categories = useMemo(() => {
+    const list = categoryChipsState.data?.services ?? [];
+    const unique = new Set<string>();
+    for (const s of list) {
+      const label = getServiceCategoryLabel(s);
+      if (label) unique.add(label);
+    }
+    return [...unique].sort((a, b) => a.localeCompare(b));
+  }, [categoryChipsState.data?.services]);
+
+  const displayedServices = useMemo(() => {
+    if (!category) return services;
+    return services.filter((s: any) => getServiceCategoryLabel(s) === category);
+  }, [services, category]);
+
   if (isLoading) {
     return (
       <div className="space-y-3 sm:space-y-4 min-w-0">
@@ -165,10 +195,6 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
       </div>
     );
   }
-
-  const services = data?.services || [];
-  const meta = data?.meta;
-  const categories = store?.preferredCategories || [];
 
   const hasCart = cartItems.length > 0;
 
@@ -224,46 +250,66 @@ const Services = ({ storeId, isReadOnly = false }: ServicesProps) => {
           )}
 
           {/* Services List */}
-          {services.length === 0 ? (
+          {displayedServices.length === 0 ? (
             <div className="bg-white rounded-lg p-6 sm:p-10 md:p-12 text-center">
-              {!isReadOnly && (
-                <button
-                  type="button"
-                  className="w-16 h-16 cursor-pointer rounded-full flex items-center justify-center mx-auto mb-4 touch-manipulation"
-                  onClick={handleAddService}
-                  aria-label="Add service"
-                >
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 48 48"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
+              {services.length > 0 && category ? (
+                <>
+                  <h3 className="text-lg sm:text-[20px] font-bold text-gray-900 mb-2 font-[lora] tracking-tight px-1">
+                    No services in this category
+                  </h3>
+                  <p className="text-[#6C6C6C] mb-6 max-w-[min(100%,300px)] mx-auto text-sm sm:text-[14px] font-medium px-2">
+                    Try another category or view all services.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCategory('')}
+                    className="text-sm font-semibold text-[#4C9A2A] underline"
                   >
-                    <rect width="48" height="48" rx="24" fill="#4C9A2A" />
-                    <path
-                      d="M24 16V32M32 24H16"
-                      stroke="white"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+                    Show all
+                  </button>
+                </>
+              ) : (
+                <>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      className="w-16 h-16 cursor-pointer rounded-full flex items-center justify-center mx-auto mb-4 touch-manipulation"
+                      onClick={handleAddService}
+                      aria-label="Add service"
+                    >
+                      <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 48 48"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <rect width="48" height="48" rx="24" fill="#4C9A2A" />
+                        <path
+                          d="M24 16V32M32 24H16"
+                          stroke="white"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  <h3 className="text-lg sm:text-[20px] font-bold text-gray-900 mb-2 font-[lora] tracking-tight px-1">
+                    {isReadOnly ? 'Coming soon!' : 'No services added yet'}
+                  </h3>
+                  <p className="text-[#6C6C6C] mb-6 max-w-[min(100%,300px)] mx-auto text-sm sm:text-[14px] font-medium px-2">
+                    {isReadOnly
+                      ? 'Our services will be listed here once we’re up and running'
+                      : 'Add your services to let customers know what you offer and start accepting bookings'}
+                  </p>
+                </>
               )}
-              <h3 className="text-lg sm:text-[20px] font-bold text-gray-900 mb-2 font-[lora] tracking-tight px-1">
-                {isReadOnly ? 'Coming soon!' : 'No services added yet'}
-              </h3>
-              <p className="text-[#6C6C6C] mb-6 max-w-[min(100%,300px)] mx-auto text-sm sm:text-[14px] font-medium px-2">
-                {isReadOnly
-                  ? 'Our services will be listed here once we’re up and running'
-                  : 'Add your services to let customers know what you offer and start accepting bookings'}
-              </p>
             </div>
           ) : (
             <>
               <div className="space-y-3 sm:space-y-4 min-w-0">
-                {services.map((service: any) => (
+                {displayedServices.map((service: any) => (
                   <div
                     key={service.id}
                     onClick={() => handleSelectService(service)}

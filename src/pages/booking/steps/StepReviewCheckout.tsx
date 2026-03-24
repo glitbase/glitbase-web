@@ -135,7 +135,7 @@ const StripePaymentForm: React.FC<StripeFormProps> = ({
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 w-full max-w-md space-y-4 max-h-[min(92dvh,640px)] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pb-6 my-auto sm:my-0">
         <div className="flex items-center justify-between gap-3 min-w-0">
-          <h3 className="text-base sm:text-[17px] font-semibold text-[#0A0A0A] truncate pr-2">
+          <h3 className="text-base md:text-[20px] font-bold text-[#0A0A0A] truncate pr-2 font-[lora] tracking-tight">
             Complete Payment
           </h3>
           <button
@@ -147,31 +147,18 @@ const StripePaymentForm: React.FC<StripeFormProps> = ({
             ×
           </button>
         </div>
-        <p className="text-xs sm:text-[13px] text-[#555] break-words">
+        <p className="text-xs md:text-[15px] text-[#6C6C6C] font-medium break-words">
           Pay {currencySymbol}
           {amount.toLocaleString()} to confirm your booking
         </p>
         <PaymentElement />
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={processing}
-            className="flex-1 rounded-full border border-gray-200 py-3 font-semibold text-sm sm:text-[14px] text-[#555] touch-manipulation min-h-[44px]"
-          >
+          <Button variant='cancel' onClick={onClose} disabled={processing} className="flex-1">
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handlePay}
-            disabled={processing}
-            className="flex-1 rounded-full bg-[#4C9A2A] text-white py-3 font-semibold text-sm sm:text-[14px] hover:bg-[#3d7a22] disabled:opacity-50 flex items-center justify-center gap-2 touch-manipulation min-h-[44px]"
-          >
-            {processing && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-            )}
-            {processing ? "Processing..." : "Pay now"}
-          </button>
+          </Button>
+          <Button onClick={handlePay} disabled={processing} loading={processing} className="flex-1">
+            Pay now
+          </Button>
         </div>
       </div>
     </div>

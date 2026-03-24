@@ -9,6 +9,10 @@ import {
   useAcceptSubscriptionMutation,
   useCreateSubscriptionMutation,
 } from '@/redux/vendor';
+import {
+  VendorSubscriptionStripePayment,
+  extractSubscriptionClientSecret,
+} from './VendorSubscriptionStripePayment';
 import { useAppSelector, useAppDispatch } from '@/hooks/redux-hooks';
 import { toast } from 'react-toastify';
 import { useUserProfileQuery } from '@/redux/auth';
@@ -25,6 +29,12 @@ const SubscriptionSetup = () => {
   // Form state - no localStorage needed
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  /** UK: after POST /subscriptions, open Stripe on this screen (same pattern as mobile payment sheet). */
+  const [stripeCheckout, setStripeCheckout] = useState<{
+    clientSecret: string;
+    planName: string;
+    planPrice: string;
+  } | null>(null);
 
   const { data: plans, isLoading } =
     useGetActiveSubscriptionPlansQuery(undefined);
@@ -140,39 +150,16 @@ const SubscriptionSetup = () => {
         // Create subscription (backend will handle Stripe)
         const result = await createSubscription(payload).unwrap();
 
-        console.log('Subscription result:', result);
-
         if (result.status) {
-          // Handle 3D Secure if clientSecret is provided
-          if (result.data?.clientSecret) {
-            console.log('Client secret received:', result.data.clientSecret);
+          const clientSecret = extractSubscriptionClientSecret(result);
 
-            // Check if it's a setup intent or payment intent
-            const isSetupIntent = result.data.clientSecret.startsWith('seti_');
-            const isPaymentIntent = result.data.clientSecret.startsWith('pi_');
-
-            console.log(
-              'Client secret type:',
-              isSetupIntent
-                ? 'Setup Intent'
-                : isPaymentIntent
-                  ? 'Payment Intent'
-                  : 'Unknown'
-            );
-
-            // Navigate to checkout page to handle 3DS
-            navigate('/vendor/onboarding/checkout', {
-              state: {
-                clientSecret: result.data.clientSecret,
-                planName: `${selectedPlan.name}`,
-                planPrice: formatPrice(selectedPlan.price, selectedPlan.currency),
-              },
+          if (clientSecret) {
+            setStripeCheckout({
+              clientSecret,
+              planName: String(selectedPlan.name ?? 'Subscription'),
+              planPrice: formatPrice(selectedPlan.price, selectedPlan.currency),
             });
           } else {
-            console.log(
-              'No client secret provided, subscription created without payment'
-            );
-            // No 3D Secure required, subscription created successfully
             await handleSubscriptionSuccess();
           }
         } else {
@@ -244,10 +231,10 @@ const SubscriptionSetup = () => {
             </>
           ) : (
             /* UK - Monthly/Yearly */
-            <div className="space-y-2 flex flex-col items-center text-center mb-8">
+            <div className="space-y-2 flex flex-col items-center mb-8 mt-8">
               <Typography
                 variant="heading"
-                className="!text-[2rem] font-medium font-[lora]"
+                className="!text-[1.8rem] font-medium font-[lora] tracking-tight"
               >
                 Choose the perfect plan to grow your business
               </Typography>
@@ -288,10 +275,10 @@ const SubscriptionSetup = () => {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">
+                  <h4 className="font-bold text-[#0A0A0A] font-[lora] tracking-tight">
                     {feature.title}
                   </h4>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-[#6C6C6C] font-medium mt-1">
                     {feature.description}
                   </p>
                 </div>
@@ -318,24 +305,24 @@ const SubscriptionSetup = () => {
               {monthlyPlan && (
                 <button
                   onClick={() => setSelectedPlan(monthlyPlan)}
-                  className={`p-6 border-2 rounded-lg text-left transition-all ${
+                  className={`p-4 border-2 rounded-lg text-left transition-all ${
                     selectedPlan?._id === monthlyPlan._id
                       ? 'border-[#CC5A88] bg-[#FFEFF6]'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-md font-bold text-[#0A0A0A] font-[lora] tracking-tight">
                       Monthly
                     </h3>
                     <div className="mt-2">
                       <span className="text-3xl font-bold text-gray-900">
                         {formatPrice(monthlyPlan.price, monthlyPlan.currency)}
                       </span>
-                      <span className="text-gray-600">/month</span>
+                      <span className="text-[#6C6C6C] font-medium">/month</span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[#6C6C6C] font-medium">
                     {monthlyPlan.description}
                   </p>
                 </button>
@@ -357,17 +344,17 @@ const SubscriptionSetup = () => {
                     </span>
                   </div>
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-md font-bold text-[#0A0A0A] font-[lora] tracking-tight">
                       Yearly
                     </h3>
                     <div className="mt-2">
                       <span className="text-3xl font-bold text-gray-900">
                         {formatPrice(yearlyPlan.price, yearlyPlan.currency)}
                       </span>
-                      <span className="text-gray-600">/year</span>
+                      <span className="text-[#6C6C6C] font-medium">/year</span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[#6C6C6C] font-medium">
                     {yearlyPlan.description}
                   </p>
                 </button>
@@ -378,7 +365,6 @@ const SubscriptionSetup = () => {
           {/* CTA Button */}
           <div className="mt-8">
             <Button
-              variant="default"
               size="full"
               onClick={handleStartTrial}
               disabled={
@@ -387,7 +373,7 @@ const SubscriptionSetup = () => {
                 isCreatingSubscription
               }
               loading={isAccepting || isCreatingSubscription}
-              className="bg-[#60983C] hover:bg-[#4d7a30] text-lg py-4"
+              className=""
             >
               {isNigeria
                 ? 'Start free - 0% commission for 30 days'
@@ -400,6 +386,23 @@ const SubscriptionSetup = () => {
             )}
           </div>
 
+
+          {stripeCheckout && (
+            <VendorSubscriptionStripePayment
+              variant="modal"
+              clientSecret={stripeCheckout.clientSecret}
+              planName={stripeCheckout.planName}
+              planPrice={stripeCheckout.planPrice}
+              onSuccess={() => {
+                setStripeCheckout(null);
+                setShowSuccessModal(true);
+              }}
+              onCancel={() => {
+                setStripeCheckout(null);
+                toast.warning('Payment cancelled.');
+              }}
+            />
+          )}
 
           {/* Success Modal */}
           {showSuccessModal && (
